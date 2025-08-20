@@ -1,1 +1,23 @@
-node_modules
+# Compiled output
+*.js
+*.js.map
+
+# Node modules
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Logs and temporary files
+*.log
+.cache/
+tmp/
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Environment variables
+.env
+.env.local

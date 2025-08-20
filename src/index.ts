@@ -3,11 +3,12 @@ import fs from "fs";
 
 const CODE = "./src/code.js";
 const OUTPUT_FILE = "./src/output.json";
-const ESPREE_OPTIONS = { // Opções do espree
+const ESPREE_OPTIONS: espree.Options = {
+  // Opções do espree
   ecmaVersion: "latest",
 };
 
-function create_tree(code, output = undefined) {
+function create_tree(code: string, output?: string) {
   const ast = espree.parse(code, ESPREE_OPTIONS);
 
   if (output) {

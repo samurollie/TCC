@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "script": "node ./src/index.js"
+    "build": "tsc",
+    "script": "npm run build && node dist/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -11,5 +12,10 @@
   "dependencies": {
     "espree": "^10.4.0"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@types/espree": "^10.1.0",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  }
 }
