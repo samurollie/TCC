@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "script": "npm run build && node dist/index.js"
+    "script": "tsc && node dist/index.js"
   },
   "author": "",
   "license": "ISC",
