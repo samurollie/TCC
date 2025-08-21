@@ -1,12 +1,12 @@
 {
   "type": "Program",
   "start": 0,
-  "end": 99,
+  "end": 50,
   "body": [
     {
       "type": "FunctionDeclaration",
       "start": 0,
-      "end": 99,
+      "end": 50,
       "id": {
         "type": "Identifier",
         "start": 9,
@@ -20,56 +20,30 @@
       "body": {
         "type": "BlockStatement",
         "start": 16,
-        "end": 99,
+        "end": 50,
         "body": [
           {
-            "type": "VariableDeclaration",
-            "start": 35,
-            "end": 55,
-            "declarations": [
-              {
-                "type": "VariableDeclarator",
-                "start": 39,
-                "end": 54,
-                "id": {
-                  "type": "Identifier",
-                  "start": 39,
-                  "end": 43,
-                  "name": "name"
-                },
-                "init": {
-                  "type": "Literal",
-                  "start": 46,
-                  "end": 54,
-                  "value": "Samuel",
-                  "raw": "\"Samuel\""
-                }
-              }
-            ],
-            "kind": "var"
-          },
-          {
             "type": "ExpressionStatement",
-            "start": 58,
-            "end": 97,
+            "start": 20,
+            "end": 48,
             "expression": {
               "type": "CallExpression",
-              "start": 58,
-              "end": 96,
+              "start": 20,
+              "end": 47,
               "callee": {
                 "type": "MemberExpression",
-                "start": 58,
-                "end": 69,
+                "start": 20,
+                "end": 31,
                 "object": {
                   "type": "Identifier",
-                  "start": 58,
-                  "end": 65,
+                  "start": 20,
+                  "end": 27,
                   "name": "console"
                 },
                 "property": {
                   "type": "Identifier",
-                  "start": 66,
-                  "end": 69,
+                  "start": 28,
+                  "end": 31,
                   "name": "log"
                 },
                 "computed": false,
@@ -77,35 +51,11 @@
               },
               "arguments": [
                 {
-                  "type": "BinaryExpression",
-                  "start": 70,
-                  "end": 95,
-                  "left": {
-                    "type": "BinaryExpression",
-                    "start": 70,
-                    "end": 88,
-                    "left": {
-                      "type": "Literal",
-                      "start": 70,
-                      "end": 84,
-                      "value": "Hello World!",
-                      "raw": "\"Hello World!\""
-                    },
-                    "operator": "+",
-                    "right": {
-                      "type": "Identifier",
-                      "start": 87,
-                      "end": 88,
-                      "name": "i"
-                    }
-                  },
-                  "operator": "+",
-                  "right": {
-                    "type": "Identifier",
-                    "start": 91,
-                    "end": 95,
-                    "name": "name"
-                  }
+                  "type": "Literal",
+                  "start": 32,
+                  "end": 46,
+                  "value": "Hello World!",
+                  "raw": "\"Hello World!\""
                 }
               ],
               "optional": false
@@ -115,5 +65,5 @@
       }
     }
   ],
-  "sourceType": "script"
+  "sourceType": "module"
 }

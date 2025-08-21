@@ -2,11 +2,13 @@
   "compilerOptions": {
     "outDir": "./dist",        // Output directory for compiled JavaScript
     "allowJs": true,         // Allow JavaScript files to be included
-    "target": "es2016",      // Target ECMAScript version
+    "target": "es2017",      // Target ECMAScript version
     "strict": true,          // Enable strict type checking (recommended for new projects)
     "esModuleInterop": true, // Enable interoperability between CommonJS and ES Modules
     "skipLibCheck": true,    // Skip type checking of declaration files
-    "forceConsistentCasingInFileNames": true // Ensure consistent casing in file names
+    "forceConsistentCasingInFileNames": true, // Ensure consistent casing in file names
+    "moduleResolution": "nodenext",
+    "module": "nodenext"
   },
   "include": [
     "src/**/*"               // Include all files in the 'src' directory
