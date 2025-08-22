@@ -1,12 +1,12 @@
 {
   "type": "Program",
   "start": 0,
-  "end": 121,
+  "end": 61,
   "body": [
     {
       "type": "FunctionDeclaration",
       "start": 0,
-      "end": 121,
+      "end": 61,
       "id": {
         "type": "Identifier",
         "start": 9,
@@ -27,152 +27,57 @@
       "body": {
         "type": "BlockStatement",
         "start": 20,
-        "end": 121,
+        "end": 61,
         "body": [
           {
-            "type": "VariableDeclaration",
+            "type": "ExpressionStatement",
             "start": 24,
-            "end": 39,
-            "declarations": [
-              {
-                "type": "VariableDeclarator",
-                "start": 28,
-                "end": 38,
-                "id": {
+            "end": 59,
+            "expression": {
+              "type": "CallExpression",
+              "start": 24,
+              "end": 58,
+              "callee": {
+                "type": "MemberExpression",
+                "start": 24,
+                "end": 35,
+                "object": {
                   "type": "Identifier",
-                  "start": 28,
-                  "end": 33,
-                  "name": "times"
+                  "start": 24,
+                  "end": 31,
+                  "name": "console"
                 },
-                "init": {
-                  "type": "Literal",
-                  "start": 36,
-                  "end": 38,
-                  "value": 10,
-                  "raw": "10"
-                }
-              }
-            ],
-            "kind": "var"
-          },
-          {
-            "type": "ForStatement",
-            "start": 42,
-            "end": 119,
-            "init": {
-              "type": "VariableDeclaration",
-              "start": 47,
-              "end": 56,
-              "declarations": [
+                "property": {
+                  "type": "Identifier",
+                  "start": 32,
+                  "end": 35,
+                  "name": "log"
+                },
+                "computed": false,
+                "optional": false
+              },
+              "arguments": [
                 {
-                  "type": "VariableDeclarator",
-                  "start": 51,
-                  "end": 56,
-                  "id": {
-                    "type": "Identifier",
-                    "start": 51,
-                    "end": 52,
-                    "name": "i"
-                  },
-                  "init": {
+                  "type": "BinaryExpression",
+                  "start": 36,
+                  "end": 57,
+                  "left": {
                     "type": "Literal",
-                    "start": 55,
-                    "end": 56,
-                    "value": 0,
-                    "raw": "0"
+                    "start": 36,
+                    "end": 50,
+                    "value": "Hello World!",
+                    "raw": "\"Hello World!\""
+                  },
+                  "operator": "+",
+                  "right": {
+                    "type": "Identifier",
+                    "start": 53,
+                    "end": 57,
+                    "name": "name"
                   }
                 }
               ],
-              "kind": "let"
-            },
-            "test": {
-              "type": "BinaryExpression",
-              "start": 58,
-              "end": 67,
-              "left": {
-                "type": "Identifier",
-                "start": 58,
-                "end": 59,
-                "name": "i"
-              },
-              "operator": "<",
-              "right": {
-                "type": "Identifier",
-                "start": 62,
-                "end": 67,
-                "name": "times"
-              }
-            },
-            "update": {
-              "type": "UpdateExpression",
-              "start": 69,
-              "end": 72,
-              "operator": "++",
-              "prefix": false,
-              "argument": {
-                "type": "Identifier",
-                "start": 69,
-                "end": 70,
-                "name": "i"
-              }
-            },
-            "body": {
-              "type": "BlockStatement",
-              "start": 74,
-              "end": 119,
-              "body": [
-                {
-                  "type": "ExpressionStatement",
-                  "start": 80,
-                  "end": 115,
-                  "expression": {
-                    "type": "CallExpression",
-                    "start": 80,
-                    "end": 114,
-                    "callee": {
-                      "type": "MemberExpression",
-                      "start": 80,
-                      "end": 91,
-                      "object": {
-                        "type": "Identifier",
-                        "start": 80,
-                        "end": 87,
-                        "name": "console"
-                      },
-                      "property": {
-                        "type": "Identifier",
-                        "start": 88,
-                        "end": 91,
-                        "name": "log"
-                      },
-                      "computed": false,
-                      "optional": false
-                    },
-                    "arguments": [
-                      {
-                        "type": "BinaryExpression",
-                        "start": 92,
-                        "end": 113,
-                        "left": {
-                          "type": "Literal",
-                          "start": 92,
-                          "end": 106,
-                          "value": "Hello World!",
-                          "raw": "\"Hello World!\""
-                        },
-                        "operator": "+",
-                        "right": {
-                          "type": "Identifier",
-                          "start": 109,
-                          "end": 113,
-                          "name": "name"
-                        }
-                      }
-                    ],
-                    "optional": false
-                  }
-                }
-              ]
+              "optional": false
             }
           }
         ]

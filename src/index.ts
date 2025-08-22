@@ -15,14 +15,12 @@ function create_tree(code: string, output?: string) {
 
   walk(ast as Node, {
     enter(node, parent, prop, index) {
-      if (node.type ==  "ForStatement") {
-        console.log("estou no for");
-      }
-      
+      console.log("entrando em");
+      console.log(node.type);
     },
     leave(node, parent, prop, index) {
-      console.log("saindo de: ");
-      console.log(node);
+      console.log("saindo de");
+      console.log(node.type);
     },
   });
 
