@@ -1,6 +1,7 @@
 import * as espree from "espree";
 import fs from "fs";
 import { Node, walk } from "estree-walker";
+import { Token } from "acorn";
 
 const CODE = "./src/code.js";
 const OUTPUT_FOLDER = "./src/out/";
@@ -10,10 +11,28 @@ const ESPREE_OPTIONS: espree.Options = {
   sourceType: "module",
 };
 
-function create_tree(code: string, output?: string) {
+function createTree(code: string, output?: string): Node {
   const ast = espree.parse(code, ESPREE_OPTIONS);
 
-  walk(ast as Node, {
+  if (output) {
+    fs.writeFileSync(output + "tree.json", JSON.stringify(ast, null, 2));
+  }
+
+  return ast as Node;
+}
+
+function createTokens(code: string, output?: string): Token[] {
+  const tokens = espree.tokenize(code);
+
+  if (output) {
+    fs.writeFileSync(output + "tokens.json", JSON.stringify(tokens, null, 2));
+  }
+
+  return tokens;
+}
+
+function walkOnTree(tree: Node) {
+  walk(tree, {
     enter(node, parent, prop, index) {
       console.log("entrando em");
       console.log(node.type);
@@ -23,13 +42,9 @@ function create_tree(code: string, output?: string) {
       console.log(node.type);
     },
   });
-
-  if (output) {
-    fs.writeFileSync(output + "tree.json", JSON.stringify(ast, null, 2));
-  }
-
-  return ast;
 }
 
 const data = fs.readFileSync(CODE, "utf8");
-create_tree(data, OUTPUT_FOLDER);
+const tree = createTree(data, OUTPUT_FOLDER);
+walkOnTree(tree);
+const tokens = createTokens(data, OUTPUT_FOLDER);
