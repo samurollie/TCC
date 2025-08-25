@@ -1,8 +1,9 @@
 import type { Options as EspreeOptions } from "espree";
 import * as espree from "espree";
 import fs from "fs";
-import { Node, walk } from "estree-walker";
-import { Token } from "acorn";
+// import { walk } from "estree-walker";
+import { Node, Token } from "acorn";
+import * as walk from "acorn-walk";
 
 const CODE = "./src/code.js";
 const OUTPUT_FOLDER = "./src/out/";
@@ -12,14 +13,14 @@ const ESPREE_OPTIONS: EspreeOptions = {
   sourceType: "module",
 };
 
-function createTree(code: string, output?: string): Node {
+function createTree(code: string, output?: string) {
   const ast = espree.parse(code, ESPREE_OPTIONS);
 
   if (output) {
     fs.writeFileSync(output + "tree.json", JSON.stringify(ast, null, 2));
   }
 
-  return ast as Node;
+  return ast;
 }
 
 function createTokens(code: string, output?: string): Token[] {
@@ -33,7 +34,7 @@ function createTokens(code: string, output?: string): Token[] {
 }
 
 function walkOnTree(tree: Node) {
-  walk(tree, {
+  /* esWalk(tree, {
     enter(node, parent, prop, index) {
       console.log("entrando em");
       console.log(node.type);
@@ -42,6 +43,16 @@ function walkOnTree(tree: Node) {
       console.log("saindo de");
       console.log(node.type);
     },
+  }); */
+
+  walk.simple(tree, {
+    Literal(node) {
+      console.log(`Found a literal: ${node.value}`);
+    },
+    BinaryExpression(node) {
+      console.log(`Found a BinaryExpression: ${JSON.stringify(node, null, 2)}`);
+    },
+    
   });
 }
 

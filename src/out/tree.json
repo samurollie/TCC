@@ -1,86 +1,163 @@
 {
   "type": "Program",
   "start": 0,
-  "end": 61,
+  "end": 168,
   "body": [
     {
-      "type": "FunctionDeclaration",
+      "type": "ImportDeclaration",
       "start": 0,
-      "end": 61,
-      "id": {
-        "type": "Identifier",
-        "start": 9,
-        "end": 13,
-        "name": "main"
-      },
-      "expression": false,
-      "generator": false,
-      "async": false,
-      "params": [
+      "end": 27,
+      "specifiers": [
         {
-          "type": "Identifier",
-          "start": 14,
-          "end": 18,
-          "name": "name"
+          "type": "ImportDefaultSpecifier",
+          "start": 7,
+          "end": 11,
+          "local": {
+            "type": "Identifier",
+            "start": 7,
+            "end": 11,
+            "name": "http"
+          }
         }
       ],
-      "body": {
-        "type": "BlockStatement",
-        "start": 20,
-        "end": 61,
-        "body": [
+      "source": {
+        "type": "Literal",
+        "start": 17,
+        "end": 26,
+        "value": "k6/http",
+        "raw": "\"k6/http\""
+      },
+      "attributes": []
+    },
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 29,
+      "end": 73,
+      "declaration": {
+        "type": "VariableDeclaration",
+        "start": 36,
+        "end": 73,
+        "declarations": [
           {
-            "type": "ExpressionStatement",
-            "start": 24,
-            "end": 59,
-            "expression": {
-              "type": "CallExpression",
-              "start": 24,
-              "end": 58,
-              "callee": {
-                "type": "MemberExpression",
-                "start": 24,
-                "end": 35,
-                "object": {
-                  "type": "Identifier",
-                  "start": 24,
-                  "end": 31,
-                  "name": "console"
-                },
-                "property": {
-                  "type": "Identifier",
-                  "start": 32,
-                  "end": 35,
-                  "name": "log"
-                },
-                "computed": false,
-                "optional": false
-              },
-              "arguments": [
+            "type": "VariableDeclarator",
+            "start": 42,
+            "end": 72,
+            "id": {
+              "type": "Identifier",
+              "start": 42,
+              "end": 49,
+              "name": "options"
+            },
+            "init": {
+              "type": "ObjectExpression",
+              "start": 52,
+              "end": 72,
+              "properties": [
                 {
-                  "type": "BinaryExpression",
-                  "start": 36,
-                  "end": 57,
-                  "left": {
-                    "type": "Literal",
-                    "start": 36,
-                    "end": 50,
-                    "value": "Hello World!",
-                    "raw": "\"Hello World!\""
-                  },
-                  "operator": "+",
-                  "right": {
+                  "type": "Property",
+                  "start": 56,
+                  "end": 69,
+                  "method": false,
+                  "shorthand": false,
+                  "computed": false,
+                  "key": {
                     "type": "Identifier",
-                    "start": 53,
-                    "end": 57,
-                    "name": "name"
+                    "start": 56,
+                    "end": 66,
+                    "name": "iterations"
+                  },
+                  "value": {
+                    "type": "Literal",
+                    "start": 68,
+                    "end": 69,
+                    "value": 1,
+                    "raw": "1"
+                  },
+                  "kind": "init"
+                }
+              ]
+            }
+          }
+        ],
+        "kind": "const"
+      },
+      "specifiers": [],
+      "source": null,
+      "attributes": []
+    },
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 75,
+      "end": 168,
+      "declaration": {
+        "type": "FunctionDeclaration",
+        "start": 90,
+        "end": 168,
+        "id": null,
+        "expression": false,
+        "generator": false,
+        "async": false,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 102,
+          "end": 168,
+          "body": [
+            {
+              "type": "VariableDeclaration",
+              "start": 106,
+              "end": 166,
+              "declarations": [
+                {
+                  "type": "VariableDeclarator",
+                  "start": 112,
+                  "end": 165,
+                  "id": {
+                    "type": "Identifier",
+                    "start": 112,
+                    "end": 120,
+                    "name": "response"
+                  },
+                  "init": {
+                    "type": "CallExpression",
+                    "start": 123,
+                    "end": 165,
+                    "callee": {
+                      "type": "MemberExpression",
+                      "start": 123,
+                      "end": 131,
+                      "object": {
+                        "type": "Identifier",
+                        "start": 123,
+                        "end": 127,
+                        "name": "http"
+                      },
+                      "property": {
+                        "type": "Identifier",
+                        "start": 128,
+                        "end": 131,
+                        "name": "get"
+                      },
+                      "computed": false,
+                      "optional": false
+                    },
+                    "arguments": [
+                      {
+                        "type": "Literal",
+                        "start": 132,
+                        "end": 164,
+                        "value": "https://quickpizza.grafana.com",
+                        "raw": "\"https://quickpizza.grafana.com\""
+                      }
+                    ],
+                    "optional": false
                   }
                 }
               ],
-              "optional": false
+              "kind": "const"
             }
-          }
-        ]
+          ]
+        }
       }
     }
   ],
