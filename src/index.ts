@@ -1,3 +1,4 @@
+import type { Options as EspreeOptions } from "espree";
 import * as espree from "espree";
 import fs from "fs";
 import { Node, walk } from "estree-walker";
@@ -5,7 +6,7 @@ import { Token } from "acorn";
 
 const CODE = "./src/code.js";
 const OUTPUT_FOLDER = "./src/out/";
-const ESPREE_OPTIONS: espree.Options = {
+const ESPREE_OPTIONS: EspreeOptions = {
   // Opções do espree
   ecmaVersion: "latest",
   sourceType: "module",
