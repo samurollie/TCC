@@ -2,7 +2,7 @@
 
 ## Requisitos:
 
-- Node.js
+- Node.js v22
 
 1. Instale as dependências:
 

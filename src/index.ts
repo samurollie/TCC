@@ -1,6 +1,6 @@
 import * as espree from "espree";
 import fs from "fs";
-import { Node, walk } from "estree-walker-ts";
+import { Node, walk } from "estree-walker";
 
 const CODE = "./src/code.js";
 const OUTPUT_FOLDER = "./src/out/";
