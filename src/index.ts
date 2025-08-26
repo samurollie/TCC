@@ -1,9 +1,10 @@
 import type { Options as EspreeOptions } from "espree";
 import * as espree from "espree";
 import fs from "fs";
-// import { walk } from "estree-walker";
+import { walk as esWalk } from "estree-walker";
 import { Node, Token } from "acorn";
 import * as walk from "acorn-walk";
+import * as esquery from "esquery";
 
 const CODE = "./src/code.js";
 const OUTPUT_FOLDER = "./src/out/";
@@ -44,16 +45,26 @@ function walkOnTree(tree: Node) {
       console.log(node.type);
     },
   }); */
-
-  walk.simple(tree, {
+/*   walk.simple(tree, {
     Literal(node) {
       console.log(`Found a literal: ${node.value}`);
     },
     BinaryExpression(node) {
       console.log(`Found a BinaryExpression: ${JSON.stringify(node, null, 2)}`);
     },
-    
-  });
+  }); */
+  /* walk.full(tree, (node, state, type) => {
+    console.log(node.type);
+    console.log(state);
+    console.log(type);
+  }); */
+  /* walk.ancestor(tree, {
+    Literal(node, _state, ancestors) {
+      console.log(`Found a literal: ${node.value}`);
+      console.log(`ancestors:`);
+      console.log(ancestors);
+    },
+  }); */
 }
 
 const data = fs.readFileSync(CODE, "utf8");
