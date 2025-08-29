@@ -1,0 +1,40 @@
+{
+  "type": "VariableDeclarator",
+  "start": 42,
+  "end": 72,
+  "id": {
+    "type": "Identifier",
+    "start": 42,
+    "end": 49,
+    "name": "options"
+  },
+  "init": {
+    "type": "ObjectExpression",
+    "start": 52,
+    "end": 72,
+    "properties": [
+      {
+        "type": "Property",
+        "start": 56,
+        "end": 69,
+        "method": false,
+        "shorthand": false,
+        "computed": false,
+        "key": {
+          "type": "Identifier",
+          "start": 56,
+          "end": 66,
+          "name": "iterations"
+        },
+        "value": {
+          "type": "Literal",
+          "start": 68,
+          "end": 69,
+          "value": 1,
+          "raw": "1"
+        },
+        "kind": "init"
+      }
+    ]
+  }
+}
