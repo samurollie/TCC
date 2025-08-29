@@ -4,9 +4,12 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "script": "tsc && node dist/index.js"
+    "script": "tsc && node dist/main.js"
   },
-  "author": "",
+  "author": {
+    "name": "Samuel Lucas Vieira Lins Barbosa",
+    "email": "slvlb@ic.ufal.br"
+  },
   "license": "ISC",
   "description": "",
   "dependencies": {
