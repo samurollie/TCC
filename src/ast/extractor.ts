@@ -1,16 +1,29 @@
-import { ExportDefaultDeclaration, Node, VariableDeclarator } from "acorn";
+import {
+  ExportDefaultDeclaration,
+  ExportNamedDeclaration,
+  Node,
+  VariableDeclarator,
+  VariableDeclaration,
+  FunctionDeclaration,
+} from "acorn";
 import * as walk from "acorn-walk";
 import { saveToFile } from "../utils/file.js";
-import { FunctionDeclaration } from "acorn";
 import NodeNotFoundException from "../exceptions/NodeNotFoundException.js";
+import { Identifier } from "acorn";
 
 export function extractOptions(tree: Node, output?: string): Node {
   let optionsNode: Node | null = null;
 
   walk.simple(tree, {
-    VariableDeclarator(node: VariableDeclarator) {
-      if ("name" in node.id && node.id.name === "options") {
-        optionsNode = node;
+    ExportNamedDeclaration(node: ExportNamedDeclaration) {
+      if (isVariableDeclaration(node.declaration)) {
+        const firstDeclaration = node.declaration.declarations[0];
+        if (
+          isIdentifier(firstDeclaration.id) &&
+          firstDeclaration.id.name == "options"
+        ) {
+          optionsNode = node;
+        }
       }
     },
   });
@@ -31,7 +44,10 @@ export function extractMainFunction(tree: Node, output?: string): Node {
 
   walk.simple(tree, {
     ExportDefaultDeclaration(node: ExportDefaultDeclaration) {
-      if ("id" in node.declaration && node.declaration.id === null) {
+      if (
+        isFunctionDeclaration(node.declaration) &&
+        node.declaration.id == null
+      ) {
         mainFunctionNode = node;
       }
     },
@@ -46,4 +62,16 @@ export function extractMainFunction(tree: Node, output?: string): Node {
   }
 
   return mainFunctionNode;
+}
+
+function isVariableDeclaration(node: any): node is VariableDeclaration {
+  return node.type === "VariableDeclaration";
+}
+
+function isFunctionDeclaration(node: any): node is FunctionDeclaration {
+  return node.type === "FunctionDeclaration";
+}
+
+function isIdentifier(node: any): node is Identifier {
+  return node.type === "Identifier";
 }
