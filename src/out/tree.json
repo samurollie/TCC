@@ -1,7 +1,7 @@
 {
   "type": "Program",
   "start": 0,
-  "end": 168,
+  "end": 170,
   "body": [
     {
       "type": "ImportDeclaration",
@@ -30,69 +30,61 @@
       "attributes": []
     },
     {
-      "type": "ExportNamedDeclaration",
-      "start": 29,
-      "end": 73,
-      "declaration": {
-        "type": "VariableDeclaration",
-        "start": 36,
-        "end": 73,
-        "declarations": [
-          {
-            "type": "VariableDeclarator",
-            "start": 42,
-            "end": 72,
-            "id": {
-              "type": "Identifier",
-              "start": 42,
-              "end": 49,
-              "name": "options"
-            },
-            "init": {
-              "type": "ObjectExpression",
-              "start": 52,
-              "end": 72,
-              "properties": [
-                {
-                  "type": "Property",
-                  "start": 56,
-                  "end": 69,
-                  "method": false,
-                  "shorthand": false,
-                  "computed": false,
-                  "key": {
-                    "type": "Identifier",
-                    "start": 56,
-                    "end": 66,
-                    "name": "iterations"
-                  },
-                  "value": {
-                    "type": "Literal",
-                    "start": 68,
-                    "end": 69,
-                    "value": 1,
-                    "raw": "1"
-                  },
-                  "kind": "init"
-                }
-              ]
-            }
+      "type": "VariableDeclaration",
+      "start": 32,
+      "end": 71,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 38,
+          "end": 70,
+          "id": {
+            "type": "Identifier",
+            "start": 38,
+            "end": 45,
+            "name": "options"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 48,
+            "end": 70,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 53,
+                "end": 66,
+                "method": false,
+                "shorthand": false,
+                "computed": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 53,
+                  "end": 63,
+                  "name": "iterations"
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 65,
+                  "end": 66,
+                  "value": 1,
+                  "raw": "1"
+                },
+                "kind": "init"
+              }
+            ]
           }
-        ],
-        "kind": "const"
-      },
-      "specifiers": [],
-      "source": null,
-      "attributes": []
+        }
+      ],
+      "kind": "const"
     },
     {
       "type": "ExportDefaultDeclaration",
       "start": 75,
-      "end": 168,
+      "end": 170,
       "declaration": {
         "type": "FunctionDeclaration",
         "start": 90,
-        "end": 168,
+        "end": 170,
         "id": null,
         "expression": false,
         "generator": false,
@@ -101,41 +93,41 @@
         "body": {
           "type": "BlockStatement",
           "start": 102,
-          "end": 168,
+          "end": 170,
           "body": [
             {
               "type": "VariableDeclaration",
-              "start": 106,
-              "end": 166,
+              "start": 107,
+              "end": 167,
               "declarations": [
                 {
                   "type": "VariableDeclarator",
-                  "start": 112,
-                  "end": 165,
+                  "start": 113,
+                  "end": 166,
                   "id": {
                     "type": "Identifier",
-                    "start": 112,
-                    "end": 120,
+                    "start": 113,
+                    "end": 121,
                     "name": "response"
                   },
                   "init": {
                     "type": "CallExpression",
-                    "start": 123,
-                    "end": 165,
+                    "start": 124,
+                    "end": 166,
                     "callee": {
                       "type": "MemberExpression",
-                      "start": 123,
-                      "end": 131,
+                      "start": 124,
+                      "end": 132,
                       "object": {
                         "type": "Identifier",
-                        "start": 123,
-                        "end": 127,
+                        "start": 124,
+                        "end": 128,
                         "name": "http"
                       },
                       "property": {
                         "type": "Identifier",
-                        "start": 128,
-                        "end": 131,
+                        "start": 129,
+                        "end": 132,
                         "name": "get"
                       },
                       "computed": false,
@@ -144,8 +136,8 @@
                     "arguments": [
                       {
                         "type": "Literal",
-                        "start": 132,
-                        "end": 164,
+                        "start": 133,
+                        "end": 165,
                         "value": "https://quickpizza.grafana.com",
                         "raw": "\"https://quickpizza.grafana.com\""
                       }
