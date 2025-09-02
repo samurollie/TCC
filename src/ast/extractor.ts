@@ -1,15 +1,12 @@
-import {
-  ExportDefaultDeclaration,
-  ExportNamedDeclaration,
-  Node,
-  VariableDeclarator,
-  VariableDeclaration,
-  FunctionDeclaration,
-} from "acorn";
+import { ExportDefaultDeclaration, ExportNamedDeclaration, Node } from "acorn";
 import * as walk from "acorn-walk";
 import { saveToFile } from "../utils/file.js";
 import NodeNotFoundException from "../exceptions/NodeNotFoundException.js";
-import { Identifier } from "acorn";
+import {
+  isFunctionDeclaration,
+  isIdentifier,
+  isVariableDeclaration,
+} from "../utils/types.js";
 
 export function extractOptions(tree: Node, output?: string): Node {
   let optionsNode: Node | null = null;
@@ -62,16 +59,4 @@ export function extractMainFunction(tree: Node, output?: string): Node {
   }
 
   return mainFunctionNode;
-}
-
-function isVariableDeclaration(node: any): node is VariableDeclaration {
-  return node.type === "VariableDeclaration";
-}
-
-function isFunctionDeclaration(node: any): node is FunctionDeclaration {
-  return node.type === "FunctionDeclaration";
-}
-
-function isIdentifier(node: any): node is Identifier {
-  return node.type === "Identifier";
 }
