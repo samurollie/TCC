@@ -65,7 +65,20 @@ type MagicNumberFinding = {
   value: number;
   raw?: string;
   parentType?: string;
-  loc?: unknown;
+  loc?: {
+    start: { line: number; column: number };
+    end: { line: number; column: number };
+  };
+  message: string;
+};
+
+type SmellFinding = {
+  type: string;
+  message: string;
+  line: number;
+  column: number;
+  value?: string;
+  context?: string;
 };
 
 export function extractMagicNumbers(
@@ -92,16 +105,26 @@ export function extractMagicNumbers(
       // - Exported options duration strings are not numbers; safe
       // - Array lengths and such are still potential magic numbers → keep
 
+      const line = node.loc?.start?.line || 0;
+      const column = node.loc?.start?.column || 0;
+      const message = `Magic Number detected: ${node.value} at line ${line}, column ${column}. Consider using a named constant to explain what this number represents.`;
+
       findings.push({
         value: node.value,
         raw: node.raw,
         parentType: parent?.type,
         loc: node.loc,
+        message,
       });
     },
   });
 
   if (output) {
+    // Save human-readable messages
+    const messages = findings.map((f) => f.message);
+    saveToFile(output + "magic-numbers-messages.txt", messages.join("\n\n"));
+
+    // Save detailed JSON for debugging
     saveToFile(
       output + "magic-numbers.json",
       JSON.stringify(findings, null, 2)
@@ -109,4 +132,24 @@ export function extractMagicNumbers(
   }
 
   return findings;
+}
+
+export function generateSmellsCSV(
+  allSmells: SmellFinding[],
+  output?: string
+): void {
+  if (!output) return;
+
+  const csvHeader = "Type,Message,Line,Column,Value,Context\n";
+  const csvRows = allSmells
+    .map(
+      (smell) =>
+        `"${smell.type}","${smell.message}","${smell.line}","${
+          smell.column
+        }","${smell.value || ""}","${smell.context || ""}"`
+    )
+    .join("\n");
+
+  const csvContent = csvHeader + csvRows;
+  saveToFile(output + "smells.csv", csvContent);
 }

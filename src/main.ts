@@ -8,6 +8,7 @@ import {
   extractMainFunction,
   extractOptions,
   extractMagicNumbers,
+  generateSmellsCSV,
 } from "./ast/extractor.js";
 
 const SCRIPTS_DIR = "./k6-scripts";
@@ -17,6 +18,9 @@ const entries = fs.readdirSync(SCRIPTS_DIR, { withFileTypes: true });
 const scriptFiles = entries
   .filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
   .map((entry) => entry.name);
+
+// Collect all smells across all files
+const allSmells: any[] = [];
 
 for (const filename of scriptFiles) {
   const inputPath = `${SCRIPTS_DIR}/${filename}`;
@@ -35,4 +39,19 @@ for (const filename of scriptFiles) {
   const options = extractOptions(tree, outputDir);
   const main = extractMainFunction(tree, outputDir);
   const magicNumbers = extractMagicNumbers(tree, outputDir);
+
+  // Convert magic numbers to smell findings for CSV
+  magicNumbers.forEach((finding) => {
+    allSmells.push({
+      type: "Magic Number",
+      message: finding.message,
+      line: finding.loc?.start?.line || 0,
+      column: finding.loc?.start?.column || 0,
+      value: finding.value.toString(),
+      context: `File: ${filename}, Parent: ${finding.parentType}`,
+    });
+  });
 }
+
+// Generate CSV with all smells found
+generateSmellsCSV(allSmells, OUTPUT_ROOT);
