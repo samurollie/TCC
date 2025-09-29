@@ -60,3 +60,53 @@ export function extractMainFunction(tree: Node, output?: string): Node {
 
   return mainFunctionNode;
 }
+
+type MagicNumberFinding = {
+  value: number;
+  raw?: string;
+  parentType?: string;
+  loc?: unknown;
+};
+
+export function extractMagicNumbers(
+  tree: Node,
+  output?: string
+): MagicNumberFinding[] {
+  const findings: MagicNumberFinding[] = [];
+
+  // Collect numeric literals that are likely magic numbers
+  walk.ancestor(tree as any, {
+    Literal(node: any, ancestors: any[]) {
+      if (typeof node.value !== "number") return;
+
+      // Ignore very common sentinel values
+      if (node.value === 0 || node.value === 1 || node.value === -1) return;
+
+      const parent =
+        ancestors.length > 1 ? ancestors[ancestors.length - 2] : null;
+
+      // Heuristics to ignore some non-problematic cases
+      // - Object property keys like { 404: "Not Found" }
+      if (parent && parent.type === "Property" && parent.key === node) return;
+
+      // - Exported options duration strings are not numbers; safe
+      // - Array lengths and such are still potential magic numbers → keep
+
+      findings.push({
+        value: node.value,
+        raw: node.raw,
+        parentType: parent?.type,
+        loc: node.loc,
+      });
+    },
+  });
+
+  if (output) {
+    saveToFile(
+      output + "magic-numbers.json",
+      JSON.stringify(findings, null, 2)
+    );
+  }
+
+  return findings;
+}

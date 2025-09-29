@@ -4,7 +4,11 @@ import { openFile } from "./utils/file.js";
 import { createTree } from "./ast/tree.js";
 import { walkOnTree } from "./ast/walker.js";
 import { createTokens } from "./ast/tokens.js";
-import { extractMainFunction, extractOptions } from "./ast/extractor.js";
+import {
+  extractMainFunction,
+  extractOptions,
+  extractMagicNumbers,
+} from "./ast/extractor.js";
 
 const SCRIPTS_DIR = "./k6-scripts";
 const OUTPUT_ROOT = "./src/out/";
@@ -30,4 +34,5 @@ for (const filename of scriptFiles) {
   const tokens = createTokens(data, outputDir);
   const options = extractOptions(tree, outputDir);
   const main = extractMainFunction(tree, outputDir);
+  const magicNumbers = extractMagicNumbers(tree, outputDir);
 }
