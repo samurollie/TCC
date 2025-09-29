@@ -1,0 +1,209 @@
+{
+  "type": "ExportNamedDeclaration",
+  "start": 64,
+  "end": 358,
+  "declaration": {
+    "type": "VariableDeclaration",
+    "start": 71,
+    "end": 358,
+    "declarations": [
+      {
+        "type": "VariableDeclarator",
+        "start": 75,
+        "end": 357,
+        "id": {
+          "type": "Identifier",
+          "start": 75,
+          "end": 82,
+          "name": "options"
+        },
+        "init": {
+          "type": "ObjectExpression",
+          "start": 85,
+          "end": 357,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 157,
+              "end": 354,
+              "method": false,
+              "shorthand": false,
+              "computed": false,
+              "key": {
+                "type": "Identifier",
+                "start": 157,
+                "end": 163,
+                "name": "stages"
+              },
+              "value": {
+                "type": "ArrayExpression",
+                "start": 165,
+                "end": 354,
+                "elements": [
+                  {
+                    "type": "ObjectExpression",
+                    "start": 171,
+                    "end": 201,
+                    "properties": [
+                      {
+                        "type": "Property",
+                        "start": 173,
+                        "end": 187,
+                        "method": false,
+                        "shorthand": false,
+                        "computed": false,
+                        "key": {
+                          "type": "Identifier",
+                          "start": 173,
+                          "end": 181,
+                          "name": "duration"
+                        },
+                        "value": {
+                          "type": "Literal",
+                          "start": 183,
+                          "end": 187,
+                          "value": "1m",
+                          "raw": "\"1m\""
+                        },
+                        "kind": "init"
+                      },
+                      {
+                        "type": "Property",
+                        "start": 189,
+                        "end": 199,
+                        "method": false,
+                        "shorthand": false,
+                        "computed": false,
+                        "key": {
+                          "type": "Identifier",
+                          "start": 189,
+                          "end": 195,
+                          "name": "target"
+                        },
+                        "value": {
+                          "type": "Literal",
+                          "start": 197,
+                          "end": 199,
+                          "value": 50,
+                          "raw": "50"
+                        },
+                        "kind": "init"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ObjectExpression",
+                    "start": 230,
+                    "end": 260,
+                    "properties": [
+                      {
+                        "type": "Property",
+                        "start": 232,
+                        "end": 246,
+                        "method": false,
+                        "shorthand": false,
+                        "computed": false,
+                        "key": {
+                          "type": "Identifier",
+                          "start": 232,
+                          "end": 240,
+                          "name": "duration"
+                        },
+                        "value": {
+                          "type": "Literal",
+                          "start": 242,
+                          "end": 246,
+                          "value": "5m",
+                          "raw": "\"5m\""
+                        },
+                        "kind": "init"
+                      },
+                      {
+                        "type": "Property",
+                        "start": 248,
+                        "end": 258,
+                        "method": false,
+                        "shorthand": false,
+                        "computed": false,
+                        "key": {
+                          "type": "Identifier",
+                          "start": 248,
+                          "end": 254,
+                          "name": "target"
+                        },
+                        "value": {
+                          "type": "Literal",
+                          "start": 256,
+                          "end": 258,
+                          "value": 50,
+                          "raw": "50"
+                        },
+                        "kind": "init"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ObjectExpression",
+                    "start": 302,
+                    "end": 331,
+                    "properties": [
+                      {
+                        "type": "Property",
+                        "start": 304,
+                        "end": 318,
+                        "method": false,
+                        "shorthand": false,
+                        "computed": false,
+                        "key": {
+                          "type": "Identifier",
+                          "start": 304,
+                          "end": 312,
+                          "name": "duration"
+                        },
+                        "value": {
+                          "type": "Literal",
+                          "start": 314,
+                          "end": 318,
+                          "value": "1m",
+                          "raw": "\"1m\""
+                        },
+                        "kind": "init"
+                      },
+                      {
+                        "type": "Property",
+                        "start": 320,
+                        "end": 329,
+                        "method": false,
+                        "shorthand": false,
+                        "computed": false,
+                        "key": {
+                          "type": "Identifier",
+                          "start": 320,
+                          "end": 326,
+                          "name": "target"
+                        },
+                        "value": {
+                          "type": "Literal",
+                          "start": 328,
+                          "end": 329,
+                          "value": 0,
+                          "raw": "0"
+                        },
+                        "kind": "init"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "kind": "init"
+            }
+          ]
+        }
+      }
+    ],
+    "kind": "let"
+  },
+  "specifiers": [],
+  "source": null,
+  "attributes": []
+}

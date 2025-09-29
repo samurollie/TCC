@@ -1,0 +1,198 @@
+{
+  "type": "ExportDefaultDeclaration",
+  "start": 362,
+  "end": 520,
+  "declaration": {
+    "type": "FunctionDeclaration",
+    "start": 377,
+    "end": 520,
+    "id": null,
+    "expression": false,
+    "generator": false,
+    "async": false,
+    "params": [],
+    "body": {
+      "type": "BlockStatement",
+      "start": 389,
+      "end": 520,
+      "body": [
+        {
+          "type": "VariableDeclaration",
+          "start": 393,
+          "end": 446,
+          "declarations": [
+            {
+              "type": "VariableDeclarator",
+              "start": 397,
+              "end": 445,
+              "id": {
+                "type": "Identifier",
+                "start": 397,
+                "end": 400,
+                "name": "res"
+              },
+              "init": {
+                "type": "CallExpression",
+                "start": 403,
+                "end": 445,
+                "callee": {
+                  "type": "MemberExpression",
+                  "start": 403,
+                  "end": 411,
+                  "object": {
+                    "type": "Identifier",
+                    "start": 403,
+                    "end": 407,
+                    "name": "http"
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "start": 408,
+                    "end": 411,
+                    "name": "get"
+                  },
+                  "computed": false,
+                  "optional": false
+                },
+                "arguments": [
+                  {
+                    "type": "Literal",
+                    "start": 412,
+                    "end": 444,
+                    "value": "https://quickpizza.grafana.com",
+                    "raw": "\"https://quickpizza.grafana.com\""
+                  }
+                ],
+                "optional": false
+              }
+            }
+          ],
+          "kind": "let"
+        },
+        {
+          "type": "ExpressionStatement",
+          "start": 449,
+          "end": 506,
+          "expression": {
+            "type": "CallExpression",
+            "start": 449,
+            "end": 505,
+            "callee": {
+              "type": "Identifier",
+              "start": 449,
+              "end": 454,
+              "name": "check"
+            },
+            "arguments": [
+              {
+                "type": "Identifier",
+                "start": 455,
+                "end": 458,
+                "name": "res"
+              },
+              {
+                "type": "ObjectExpression",
+                "start": 460,
+                "end": 504,
+                "properties": [
+                  {
+                    "type": "Property",
+                    "start": 462,
+                    "end": 502,
+                    "method": false,
+                    "shorthand": false,
+                    "computed": false,
+                    "key": {
+                      "type": "Literal",
+                      "start": 462,
+                      "end": 477,
+                      "value": "status is 200",
+                      "raw": "\"status is 200\""
+                    },
+                    "value": {
+                      "type": "ArrowFunctionExpression",
+                      "start": 479,
+                      "end": 502,
+                      "id": null,
+                      "expression": true,
+                      "generator": false,
+                      "async": false,
+                      "params": [
+                        {
+                          "type": "Identifier",
+                          "start": 480,
+                          "end": 481,
+                          "name": "r"
+                        }
+                      ],
+                      "body": {
+                        "type": "BinaryExpression",
+                        "start": 486,
+                        "end": 502,
+                        "left": {
+                          "type": "MemberExpression",
+                          "start": 486,
+                          "end": 494,
+                          "object": {
+                            "type": "Identifier",
+                            "start": 486,
+                            "end": 487,
+                            "name": "r"
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "start": 488,
+                            "end": 494,
+                            "name": "status"
+                          },
+                          "computed": false,
+                          "optional": false
+                        },
+                        "operator": "===",
+                        "right": {
+                          "type": "Literal",
+                          "start": 499,
+                          "end": 502,
+                          "value": 200,
+                          "raw": "200"
+                        }
+                      }
+                    },
+                    "kind": "init"
+                  }
+                ]
+              }
+            ],
+            "optional": false
+          }
+        },
+        {
+          "type": "ExpressionStatement",
+          "start": 509,
+          "end": 518,
+          "expression": {
+            "type": "CallExpression",
+            "start": 509,
+            "end": 517,
+            "callee": {
+              "type": "Identifier",
+              "start": 509,
+              "end": 514,
+              "name": "sleep"
+            },
+            "arguments": [
+              {
+                "type": "Literal",
+                "start": 515,
+                "end": 516,
+                "value": 1,
+                "raw": "1"
+              }
+            ],
+            "optional": false
+          }
+        }
+      ]
+    }
+  }
+}

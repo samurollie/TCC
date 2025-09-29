@@ -1,5 +1,6 @@
 # Compiled output
 *.js
+!k6-scripts/**/*.js
 *.js.map
 
 # Node modules
