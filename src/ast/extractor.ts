@@ -6,6 +6,7 @@ import {
   isFunctionDeclaration,
   isIdentifier,
   isVariableDeclaration,
+  Finding,
 } from "../utils/types.js";
 
 export function extractOptions(tree: Node, output?: string): Node {
@@ -61,31 +62,8 @@ export function extractMainFunction(tree: Node, output?: string): Node {
   return mainFunctionNode;
 }
 
-type MagicNumberFinding = {
-  value: number;
-  raw?: string;
-  parentType?: string;
-  loc?: {
-    start: { line: number; column: number };
-    end: { line: number; column: number };
-  };
-  message: string;
-};
-
-type SmellFinding = {
-  type: string;
-  message: string;
-  line: number;
-  column: number;
-  value?: string;
-  context?: string;
-};
-
-export function extractMagicNumbers(
-  tree: Node,
-  output?: string
-): MagicNumberFinding[] {
-  const findings: MagicNumberFinding[] = [];
+export function extractMagicNumbers(tree: Node, output?: string): Finding[] {
+  const findings: Finding[] = [];
 
   // Collect numeric literals that are likely magic numbers
   walk.ancestor(tree as any, {
@@ -134,10 +112,7 @@ export function extractMagicNumbers(
   return findings;
 }
 
-export function generateSmellsCSV(
-  allSmells: SmellFinding[],
-  output?: string
-): void {
+export function generateSmellsCSV(allSmells: Finding[], output?: string): void {
   if (!output) return;
 
   const csvHeader = "Type,Message,Line,Column,Value,Context\n";
