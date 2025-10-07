@@ -1,14 +1,37 @@
-import { ExportDefaultDeclaration, ExportNamedDeclaration, Node } from "acorn";
+import {
+  AnonymousFunctionDeclaration,
+  ExportDefaultDeclaration,
+  ExportNamedDeclaration,
+  FunctionDeclaration,
+  Node,
+} from "acorn";
 import * as walk from "acorn-walk";
 import { saveToFile } from "../utils/file.js";
 import NodeNotFoundException from "../exceptions/NodeNotFoundException.js";
 import {
+  isExportDefaultDeclaration,
+  isExportNamedDeclaration,
   isFunctionDeclaration,
   isIdentifier,
+  isImportDeclaration,
+  isImportExpression,
   isVariableDeclaration,
-  Finding,
 } from "../utils/types.js";
 
+/**
+ * Extracts the options variable from the AST by finding the named export declaration containing the 'options' variable.
+ *
+ * @param tree - The root node of the AST to search in
+ * @param output - Optional file path to save the extracted options as JSON
+ * @returns The extracted options node from the AST
+ * @throws {NodeNotFoundException} If the options variable declaration is not found in the AST
+ *
+ * @example
+ * ```typescript
+ * const ast = parse(code);
+ * const options = extractOptions(ast);
+ * ```
+ */
 export function extractOptions(tree: Node, output?: string): Node {
   let optionsNode: Node | null = null;
 
@@ -37,7 +60,43 @@ export function extractOptions(tree: Node, output?: string): Node {
   return optionsNode;
 }
 
-export function extractMainFunction(tree: Node, output?: string): Node {
+export function extractInitContext(tree: Node, output?: string): Node[] {
+  let initContext: Node[] = [];
+
+  // Pega tudo que não é importação e exportação e que está fora de uma função (ou seja, no initContext do k6)
+  walk.fullAncestor(tree, (node, _, ancestors) => {
+    if (
+      !isExportDefaultDeclaration(node) &&
+      !isExportNamedDeclaration(node) &&
+      !isImportDeclaration(node) &&
+      !isImportExpression(node) &&
+      ancestors.length == 2
+    ) {
+      initContext.push(node);
+    }
+  });
+
+  if (output) {
+    saveToFile(
+      output + "initContext.json",
+      JSON.stringify(initContext, null, 2)
+    );
+  }
+
+  return initContext;
+}
+
+export function extractSetupFunction(tree: Node, output?: string): Node | null {
+  let setupNode = extractDefaultFunctionByName(tree, "setup");
+
+  if (output) {
+    saveToFile(output + "setup.json", JSON.stringify(setupNode, null, 2));
+  }
+
+  return setupNode;
+}
+
+export function extractDefaultTestFunction(tree: Node, output?: string): Node {
   let mainFunctionNode: Node | null = null;
 
   walk.simple(tree, {
@@ -62,69 +121,55 @@ export function extractMainFunction(tree: Node, output?: string): Node {
   return mainFunctionNode;
 }
 
-export function extractMagicNumbers(tree: Node, output?: string): Finding[] {
-  const findings: Finding[] = [];
+export function extractTeardownFunction(
+  tree: Node,
+  output?: string
+): Node | null {
+  let teardownNode = extractDefaultFunctionByName(tree, "teardown");
 
-  // Collect numeric literals that are likely magic numbers
-  walk.ancestor(tree as any, {
-    Literal(node: any, ancestors: any[]) {
-      if (typeof node.value !== "number") return;
+  if (output) {
+    saveToFile(output + "teardown.json", JSON.stringify(teardownNode, null, 2));
+  }
 
-      // Ignore very common sentinel values
-      if (node.value === 0 || node.value === 1 || node.value === -1) return;
+  return teardownNode;
+}
 
-      const parent =
-        ancestors.length > 1 ? ancestors[ancestors.length - 2] : null;
+export function extractDefaultFunctionByName(
+  tree: Node,
+  name: string
+): Node | null {
+  let targetNode: Node | null = null;
 
-      // Heuristics to ignore some non-problematic cases
-      // - Object property keys like { 404: "Not Found" }
-      if (parent && parent.type === "Property" && parent.key === node) return;
-
-      // - Exported options duration strings are not numbers; safe
-      // - Array lengths and such are still potential magic numbers → keep
-
-      const line = node.loc?.start?.line || 0;
-      const column = node.loc?.start?.column || 0;
-      const message = `Magic Number detected: ${node.value} at line ${line}, column ${column}. Consider using a named constant to explain what this number represents.`;
-
-      findings.push({
-        value: node.value,
-        raw: node.raw,
-        parentType: parent?.type,
-        loc: node.loc,
-        message,
-      });
+  walk.simple(tree, {
+    ExportNamedDeclaration(node: ExportNamedDeclaration) {
+      if (
+        isFunctionDeclaration(node.declaration) &&
+        node.declaration.id.name == name
+      ) {
+        targetNode = node;
+      }
     },
   });
 
-  if (output) {
-    // Save human-readable messages
-    const messages = findings.map((f) => f.message);
-    saveToFile(output + "magic-numbers-messages.txt", messages.join("\n\n"));
-
-    // Save detailed JSON for debugging
-    saveToFile(
-      output + "magic-numbers.json",
-      JSON.stringify(findings, null, 2)
-    );
-  }
-
-  return findings;
+  return targetNode;
 }
 
-export function generateSmellsCSV(allSmells: Finding[], output?: string): void {
-  if (!output) return;
+export function extractFunctionByName(tree: Node, name: string): Node {
+  let targetNode: Node | null = null;
 
-  const csvHeader = "Type,Message,Line,Column,Value,Context\n";
-  const csvRows = allSmells
-    .map(
-      (smell) =>
-        `"${smell.type}","${smell.message}","${smell.line}","${
-          smell.column
-        }","${smell.value || ""}","${smell.context || ""}"`
-    )
-    .join("\n");
+  walk.simple(tree, {
+    FunctionDeclaration(
+      node: FunctionDeclaration | AnonymousFunctionDeclaration
+    ) {
+      if (node.id && node.id.name === name) {
+        targetNode = node;
+      }
+    },
+  });
 
-  const csvContent = csvHeader + csvRows;
-  saveToFile(output + "smells.csv", csvContent);
+  if (!targetNode) {
+    throw new NodeNotFoundException("Request function not found");
+  }
+
+  return targetNode;
 }
