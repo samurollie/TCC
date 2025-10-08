@@ -60,6 +60,22 @@ export function extractOptions(tree: Node, output?: string): Node {
   return optionsNode;
 }
 
+/**
+ * Extracts nodes from the Abstract Syntax Tree that belong to the initialization context in k6.
+ * The initialization context includes all top-level statements except imports and exports.
+ * 
+ * @param tree - The root node of the Abstract Syntax Tree to analyze
+ * @param output - Optional. If provided, saves the extracted context to a JSON file at the specified path
+ * @returns An array of AST nodes that belong to the initialization context
+ * 
+ * @example
+ * ```typescript
+ * const ast = parse(sourceCode);
+ * const initContextNodes = extractInitContext(ast);
+ * // or with file output
+ * const initContextNodes = extractInitContext(ast, './output/');
+ * ```
+ */
 export function extractInitContext(tree: Node, output?: string): Node[] {
   let initContext: Node[] = [];
 
@@ -86,6 +102,17 @@ export function extractInitContext(tree: Node, output?: string): Node[] {
   return initContext;
 }
 
+/**
+ * Extracts the setup function from an Abstract Syntax Tree (AST).
+ * 
+ * @param tree - The AST node to search for the setup function
+ * @param output - Optional file path where the extracted setup function will be saved as JSON
+ * @returns The setup function node if found, null otherwise
+ * 
+ * @example
+ * const ast = parseCode(sourceCode);
+ * const setupFn = extractSetupFunction(ast);
+ */
 export function extractSetupFunction(tree: Node, output?: string): Node | null {
   let setupNode = extractDefaultFunctionByName(tree, "setup");
 
@@ -96,6 +123,18 @@ export function extractSetupFunction(tree: Node, output?: string): Node | null {
   return setupNode;
 }
 
+/**
+ * Extracts the default exported test function from an Abstract Syntax Tree (AST).
+ * 
+ * @param tree - The AST node representing the entire source code
+ * @param output - Optional path to save the extracted function as JSON
+ * @returns The AST node of the default exported function
+ * @throws {NodeNotFoundException} When no default exported function is found
+ * 
+ * @example
+ * const ast = parse(sourceCode);
+ * const mainFunction = extractDefaultTestFunction(ast);
+ */
 export function extractDefaultTestFunction(tree: Node, output?: string): Node {
   let mainFunctionNode: Node | null = null;
 
@@ -121,6 +160,20 @@ export function extractDefaultTestFunction(tree: Node, output?: string): Node {
   return mainFunctionNode;
 }
 
+/**
+ * Extracts the default-exported function named "teardown" from the provided AST and optionally persists it as JSON.
+ *
+ * If an output path/prefix is supplied, the resulting node (or `null` if not found)
+ * is pretty-printed and saved to `${output}teardown.json`.
+ *
+ * @param tree - The root AST node to search for the "teardown" function.
+ * @param output - Optional file path or prefix used to write the serialized result; no file is written if omitted.
+ * @returns The AST node representing the "teardown" function if found; otherwise `null`.
+ * @remarks This operation is read-only and does not mutate the input AST.
+ * @example
+ * // Writes './dist/teardown.json' and returns the node (or null)
+ * const node = extractTeardownFunction(ast, './dist/');
+ */
 export function extractTeardownFunction(
   tree: Node,
   output?: string
@@ -134,6 +187,26 @@ export function extractTeardownFunction(
   return teardownNode;
 }
 
+/**
+ * Searches the provided AST for a named exported function and returns its export node.
+ *
+ * Traverses the AST and looks for an `ExportNamedDeclaration` whose `declaration` is a
+ * `FunctionDeclaration` with an identifier that matches the given `name`. If found, the
+ * corresponding `ExportNamedDeclaration` node is returned; otherwise, `null` is returned.
+ *
+ * @param tree - The root AST node to search.
+ * @param name - The function name to match (e.g., "myFunction").
+ * @returns The `ExportNamedDeclaration` node that exports the matching function, or `null` if not found.
+ *
+ * @remarks
+ * - Matches only inline named function declarations exported directly, e.g., `export function foo() {}`.
+ * - Does not match default exports, re-exports, specifier-based exports (e.g., `export { foo }`), or function/variable expressions.
+ * - The AST is not modified.
+ *
+ * @example
+ * // Returns the export node for `foo`, or null if not present.
+ * const node = extractDefaultFunctionByName(ast, "foo");
+ */
 export function extractDefaultFunctionByName(
   tree: Node,
   name: string
@@ -154,6 +227,21 @@ export function extractDefaultFunctionByName(
   return targetNode;
 }
 
+/**
+ * Extracts a function declaration node from an AST by its identifier name.
+ *
+ * Traverses the provided AST and inspects FunctionDeclaration nodes, returning
+ * the one whose identifier exactly matches the given name. If multiple matches
+ * exist, the last one encountered during traversal is returned.
+ *
+ * @param tree - The root AST node to search.
+ * @param name - The identifier of the function to locate.
+ * @returns The matching function declaration node.
+ * @throws NodeNotFoundException If no function with the specified name is found.
+ * @example
+ * const fnNode = extractFunctionByName(ast, "myFunction");
+ * // Use fnNode to inspect parameters, body, etc.
+ */
 export function extractFunctionByName(tree: Node, name: string): Node {
   let targetNode: Node | null = null;
 
