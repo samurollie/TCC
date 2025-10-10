@@ -3,7 +3,7 @@ import * as walk from "acorn-walk";
 import { saveToFile } from "../utils/file.js";
 import { Smell } from "../utils/types.js";
 
-export function magicNumbersDetector({
+/* function magicNumbersDetector({
   tree,
   output,
 }: {
@@ -56,4 +56,6 @@ export function magicNumbersDetector({
   }
 
   return findings;
-}
+} */
+
+// function detectSetupExceptionSmell

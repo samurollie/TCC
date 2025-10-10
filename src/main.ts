@@ -1,4 +1,3 @@
-import * as espree from "espree";
 import fs from "fs";
 import { openFile } from "./utils/file.js";
 import { createTree } from "./ast/tree.js";
@@ -10,8 +9,6 @@ import {
   extractSetupFunction,
   extractTeardownFunction,
 } from "./ast/extractor.js";
-import { generateSmellsCSV } from "./utils/reports.js";
-import { magicNumbersDetector } from "./smells/detectors.js";
 
 const SCRIPTS_DIR = "./k6-scripts";
 const OUTPUT_ROOT = "./src/out/";
@@ -44,11 +41,11 @@ function main() {
     const initContext = extractInitContext(tree, outputDir);
     const options = extractOptions(tree, outputDir);
     const setup = extractSetupFunction(tree, outputDir);
-    const main = extractDefaultTestFunction(tree, outputDir);
     const teardown = extractTeardownFunction(tree, outputDir);
+    const main = extractDefaultTestFunction(tree, outputDir);
 
     //Smell detections
-    const magicNumbers = magicNumbersDetector({ tree, output: outputDir });
+    // const magicNumbers = magicNumbersDetector({ tree, output: outputDir });
 
     //Generate report
   }

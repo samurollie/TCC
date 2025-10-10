@@ -3,6 +3,7 @@ import {
   ExportDefaultDeclaration,
   ExportNamedDeclaration,
   FunctionDeclaration,
+  Identifier,
   Node,
 } from "acorn";
 import * as walk from "acorn-walk";
@@ -63,11 +64,11 @@ export function extractOptions(tree: Node, output?: string): Node {
 /**
  * Extracts nodes from the Abstract Syntax Tree that belong to the initialization context in k6.
  * The initialization context includes all top-level statements except imports and exports.
- * 
+ *
  * @param tree - The root node of the Abstract Syntax Tree to analyze
  * @param output - Optional. If provided, saves the extracted context to a JSON file at the specified path
  * @returns An array of AST nodes that belong to the initialization context
- * 
+ *
  * @example
  * ```typescript
  * const ast = parse(sourceCode);
@@ -104,11 +105,11 @@ export function extractInitContext(tree: Node, output?: string): Node[] {
 
 /**
  * Extracts the setup function from an Abstract Syntax Tree (AST).
- * 
+ *
  * @param tree - The AST node to search for the setup function
  * @param output - Optional file path where the extracted setup function will be saved as JSON
  * @returns The setup function node if found, null otherwise
- * 
+ *
  * @example
  * const ast = parseCode(sourceCode);
  * const setupFn = extractSetupFunction(ast);
@@ -125,12 +126,12 @@ export function extractSetupFunction(tree: Node, output?: string): Node | null {
 
 /**
  * Extracts the default exported test function from an Abstract Syntax Tree (AST).
- * 
+ *
  * @param tree - The AST node representing the entire source code
  * @param output - Optional path to save the extracted function as JSON
  * @returns The AST node of the default exported function
  * @throws {NodeNotFoundException} When no default exported function is found
- * 
+ *
  * @example
  * const ast = parse(sourceCode);
  * const mainFunction = extractDefaultTestFunction(ast);
@@ -260,4 +261,16 @@ export function extractFunctionByName(tree: Node, name: string): Node {
   }
 
   return targetNode;
+}
+
+export function hasMultipleScenarions(options: Node): Boolean {
+  walk.simple(options, {
+    Identifier(node: Identifier) {
+      if (node.name === "scenarios") {
+        return true;
+      }
+    },
+  });
+
+  return false;
 }
