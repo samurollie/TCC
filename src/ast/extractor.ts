@@ -144,8 +144,15 @@ export function* extractMainTestFunction(tree: Node, output?: string) {
   let nodes: Node[] = [];
 
   if (hasMultipleScenarions(tree)) {
-    const foundNodes = extractScenarioFunctions(tree);
-    nodes.push(...foundNodes);
+    const scenarioNodes = extractScenarioFunctions(tree);
+    nodes.push(...scenarioNodes);
+
+    if (hasScenarioUsingDefaultFunction(tree)) {
+      const defaultFunction = extractDefaultTestFunction(tree);
+      if (defaultFunction) {
+        nodes.push(defaultFunction);
+      }
+    }
   } else {
     const mainFunctionNode = extractDefaultTestFunction(tree);
 
@@ -222,6 +229,7 @@ export function extractDefaultFunctionByName(
     ExportNamedDeclaration(node: ExportNamedDeclaration) {
       if (
         isFunctionDeclaration(node.declaration) &&
+        node.declaration.id &&
         node.declaration.id.name == name
       ) {
         targetNode = node;
@@ -274,7 +282,7 @@ export function hasMultipleScenarions(tree: Node): boolean {
 
     walk.simple(optionsNode, {
       Property(node) {
-        if (isIdentifier(node.key) && node.key.name === "exec") { // Se em options, tiver um cenário com a 
+        if (isIdentifier(node.key) && node.key.name === "scenarios") {
           hasScenarios = true;
         }
       },
@@ -325,7 +333,7 @@ function extractScenarioFunctions(tree: Node) {
     }
 
     if (isFunctionDeclaration(node)) {
-      if (node.id.name) {
+      if (node.id && node.id.name) {
         state.foundFunctions[node.id.name] = node;
       }
     }
@@ -342,4 +350,52 @@ function extractScenarioFunctions(tree: Node) {
   }
 
   return resultNodes;
+}
+
+/**
+ * Verifica se algum cenário não tem executor definido ou usa a função default.
+ * Quando um cenário não especifica 'exec', o k6 usa a função default exportada.
+ *
+ * @param tree - A árvore AST para analisar
+ * @returns true se algum cenário usar implicitamente a função default
+ */
+function hasScenarioUsingDefaultFunction(tree: Node): boolean {
+  let hasDefaultScenario = false;
+
+  walk.simple(tree, {
+    Property(node) {
+      
+      if (
+        isIdentifier(node.key) &&
+        node.key.name === "scenarios" &&
+        node.value.type === "ObjectExpression"
+      ) {
+        for (const scenarioProperty of node.value.properties) {
+          if (
+            scenarioProperty.type === "Property" &&
+            scenarioProperty.value.type === "ObjectExpression"
+          ) {
+            let hasExecProperty = false;
+
+            for (const prop of scenarioProperty.value.properties) {
+              if (
+                prop.type === "Property" &&
+                isIdentifier(prop.key) &&
+                prop.key.name === "exec"
+              ) {
+                hasExecProperty = true;
+                break;
+              }
+            }
+
+            if (!hasExecProperty) {
+              hasDefaultScenario = true;
+            }
+          }
+        }
+      }
+    },
+  });
+
+  return hasDefaultScenario;
 }
