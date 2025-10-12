@@ -4,9 +4,12 @@ import {
   ExportSpecifier,
   ImportDeclaration,
   ImportExpression,
+  Literal,
+  Property,
 } from "acorn";
 import { ExportNamedDeclaration } from "acorn";
 import { FunctionDeclaration, Identifier, VariableDeclaration } from "acorn";
+import * as walk from "acorn-walk";
 
 export type Smell = {
   // name: string;
@@ -27,6 +30,11 @@ export type Smell = {
     end: { line: number; column: number };
   };
 };
+
+export interface IFunctionWalkerState {
+  targetFunctions: Set<string>;
+  foundFunctions: Record<string, FunctionDeclaration>;
+}
 
 export function isVariableDeclaration(node: any): node is VariableDeclaration {
   return node.type === "VariableDeclaration";
@@ -68,4 +76,12 @@ export function isImportDeclaration(node: any): node is ImportDeclaration {
 
 export function isImportExpression(node: any): node is ImportExpression {
   return node.type === "ImportExpression";
+}
+
+export function isProperty(node: any): node is Property {
+  return node.type === "Property";
+}
+
+export function isLiteral(node: any): node is Literal {
+  return node.type === "Literal"
 }

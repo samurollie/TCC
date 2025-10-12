@@ -7,15 +7,19 @@ import {
   Node,
 } from "acorn";
 import * as walk from "acorn-walk";
+import { type FullAncestorWalkerCallback } from "acorn-walk";
 import { saveToFile } from "../utils/file.js";
 import NodeNotFoundException from "../exceptions/NodeNotFoundException.js";
 import {
+  IFunctionWalkerState,
   isExportDefaultDeclaration,
   isExportNamedDeclaration,
   isFunctionDeclaration,
   isIdentifier,
   isImportDeclaration,
   isImportExpression,
+  isLiteral,
+  isProperty,
   isVariableDeclaration,
 } from "../utils/types.js";
 
@@ -136,29 +140,29 @@ export function extractSetupFunction(tree: Node, output?: string): Node | null {
  * const ast = parse(sourceCode);
  * const mainFunction = extractDefaultTestFunction(ast);
  */
-export function extractDefaultTestFunction(tree: Node, output?: string): Node {
-  let mainFunctionNode: Node | null = null;
+export function* extractMainTestFunction(tree: Node, output?: string) {
+  let nodes: Node[] = [];
 
-  walk.simple(tree, {
-    ExportDefaultDeclaration(node: ExportDefaultDeclaration) {
-      if (
-        isFunctionDeclaration(node.declaration) &&
-        node.declaration.id == null
-      ) {
-        mainFunctionNode = node;
-      }
-    },
-  });
+  if (hasMultipleScenarions(tree)) {
+    const foundNodes = extractScenarioFunctions(tree);
+    nodes.push(...foundNodes);
+  } else {
+    const mainFunctionNode = extractDefaultTestFunction(tree);
 
-  if (!mainFunctionNode) {
-    throw new NodeNotFoundException("Main test function not found");
+    if (!mainFunctionNode) {
+      throw new NodeNotFoundException("Main test function not found");
+    }
+
+    nodes.push(mainFunctionNode);
   }
 
   if (output) {
-    saveToFile(output + "main.json", JSON.stringify(mainFunctionNode, null, 2));
+    saveToFile(output + "main.json", JSON.stringify(nodes, null, 2));
   }
 
-  return mainFunctionNode;
+  for (let node of nodes) {
+    yield node;
+  }
 }
 
 /**
@@ -263,14 +267,79 @@ export function extractFunctionByName(tree: Node, name: string): Node {
   return targetNode;
 }
 
-export function hasMultipleScenarions(options: Node): Boolean {
-  walk.simple(options, {
-    Identifier(node: Identifier) {
-      if (node.name === "scenarios") {
-        return true;
+export function hasMultipleScenarions(tree: Node): boolean {
+  try {
+    const optionsNode = extractOptions(tree);
+    let hasScenarios = false;
+
+    walk.simple(optionsNode, {
+      Property(node) {
+        if (isIdentifier(node.key) && node.key.name === "exec") { // Se em options, tiver um cenário com a 
+          hasScenarios = true;
+        }
+      },
+    });
+
+    return hasScenarios;
+  } catch (error) {
+    console.log("Erro ao extrair options:", error);
+    return false;
+  }
+}
+
+function extractDefaultTestFunction(tree: Node): Node | null {
+  let functionNode: Node | null = null;
+  walk.simple(tree, {
+    ExportDefaultDeclaration(node: ExportDefaultDeclaration) {
+      if (
+        isFunctionDeclaration(node.declaration) &&
+        node.declaration.id == null
+      ) {
+        functionNode = node;
       }
     },
   });
 
-  return false;
+  return functionNode;
+}
+
+function extractScenarioFunctions(tree: Node) {
+  const initialState: IFunctionWalkerState = {
+    targetFunctions: new Set(),
+    foundFunctions: {},
+  };
+
+  const walker: FullAncestorWalkerCallback<IFunctionWalkerState> = (
+    node,
+    state,
+    ancestors
+  ) => {
+    if (
+      isProperty(node) &&
+      isIdentifier(node.key) &&
+      node.key.name == "exec" &&
+      isLiteral(node.value)
+    ) {
+      const name = node.value.value as string;
+      state.targetFunctions.add(name);
+    }
+
+    if (isFunctionDeclaration(node)) {
+      if (node.id.name) {
+        state.foundFunctions[node.id.name] = node;
+      }
+    }
+  };
+
+  walk.fullAncestor(tree, walker, undefined, initialState);
+
+  const resultNodes: Node[] = [];
+
+  for (const name of initialState.targetFunctions) {
+    if (initialState.foundFunctions[name]) {
+      resultNodes.push(initialState.foundFunctions[name]);
+    }
+  }
+
+  return resultNodes;
 }

@@ -3,7 +3,7 @@ import { openFile } from "./utils/file.js";
 import { createTree } from "./ast/tree.js";
 import { createTokens } from "./ast/tokens.js";
 import {
-  extractDefaultTestFunction,
+  extractMainTestFunction,
   extractInitContext,
   extractOptions,
   extractSetupFunction,
@@ -42,7 +42,10 @@ function main() {
     const options = extractOptions(tree, outputDir);
     const setup = extractSetupFunction(tree, outputDir);
     const teardown = extractTeardownFunction(tree, outputDir);
-    const main = extractDefaultTestFunction(tree, outputDir);
+    const main = extractMainTestFunction(tree, outputDir);
+    for (const functions of main) {
+      main.next();
+    }
 
     //Smell detections
     // const magicNumbers = magicNumbersDetector({ tree, output: outputDir });
