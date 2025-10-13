@@ -1,61 +1,109 @@
-import { Node, Literal } from "acorn";
+import { CallExpression, Node } from "acorn";
 import * as walk from "acorn-walk";
-import { saveToFile } from "../utils/file.js";
-import { Smell } from "../utils/types.js";
+import {
+  Smell,
+  isCallExpression,
+  isMemberExpression,
+  isIdentifier,
+  isBinaryExpression,
+  isForStatement,
+  isWhileStatement,
+  isNewExpression,
+} from "../utils/types.js";
+import { extractFunctionDeclarationByName } from "../ast/extractor.js";
 
-/* function magicNumbersDetector({
-  tree,
-  output,
-}: {
-  tree: Node;
-  output?: string;
-}): Smell[] {
-  const findings: Smell[] = [];
+function heavyOperationsOnInitContext(initContext: Node[]): Smell[] | null {
+  const heavyOperations: Smell[] = [];
 
-  // Collect numeric literals that are likely magic numbers
-  walk.ancestor(tree, {
-    Literal(node: Literal, _, ancestors: any[]) {
-      if (typeof node.value !== "number") return;
+  initContext.forEach((node) =>
+    walk.ancestor(node, {
+      CallExpression(node: CallExpression, _, ancestors: Node[]) {
+        const callee = node.callee;
 
-      // Ignore very common sentinel values
-      if (node.value === 0 || node.value === 1 || node.value === -1) return;
+        // Ignores if the heavy operations are inside a shareArray, cause that is the desired scenario
+        if (
+          ancestors.find(
+            (node) =>
+              isNewExpression(node) &&
+              isIdentifier(node.callee) &&
+              node.callee.name === "SharedArray"
+          )
+        ) {
+          return;
+        }
 
-      const parent =
-        ancestors.length > 1 ? ancestors[ancestors.length - 2] : null;
+        if (isIdentifier(callee) && callee.name === "open") {
+          heavyOperations.push({
+            message: "File operation found",
+            type: "Heavy Init Context",
+          });
+        }
 
-      // Heuristics to ignore some non-problematic cases
-      // - Object property keys like { 404: "Not Found" }
-      if (parent && parent.type === "Property" && parent.key === node) return;
+        /* if (
+        isMemberExpression(callee) &&
+        isIdentifier(callee.object) &&
+        callee.object.name === "fs" &&
+        isIdentifier(callee.property) &&
+        (callee.property.name === "readFileSync" ||
+          callee.property.name === "readFile")
+      ) {
+        heavyOperations.push("File reading operation");
+      } */
 
-      // - Exported options duration strings are not numbers; safe
-      // - Array lengths and such are still potential magic numbers → keep
-      const line = node.loc?.start?.line || 0;
-      const column = node.loc?.start?.column || 0;
-      const message = `Magic Number detected: '${node.value}' at line ${line}, column ${column}. Consider using a named constant to explain what this number represents.`;
+        if (
+          isMemberExpression(callee) &&
+          isIdentifier(callee.object) &&
+          callee.object.name === "JSON" &&
+          isIdentifier(callee.property) &&
+          callee.property.name === "parse"
+        ) {
+          heavyOperations.push({
+            message: "JSON parsing operation",
+            type: "Heavy Init Context",
+          });
+        }
+      },
 
-      findings.push({
-        value: node.value,
-        raw: node.raw,
-        parentType: parent?.type,
-        // loc: node.loc,
-        message,
-      });
-    },
-  });
+      // Detectar loops que podem ser custosos
+      ForStatement(node: any) {
+        if (isForStatement(node)) {
+          heavyOperations.push({ message: "Loop operation (for)" });
+        }
+      },
 
-  if (output) {
-    // Save human-readable messages
-    const messages = findings.map((f) => f.message);
-    saveToFile(output + "magic-numbers-messages.txt", messages.join("\n\n"));
+      WhileStatement(node: any) {
+        if (isWhileStatement(node)) {
+          heavyOperations.push({ message: "Loop operation (while)" });
+        }
+      },
 
-    // Save detailed JSON for debugging
-    saveToFile(
-      output + "magic-numbers.json",
-      JSON.stringify(findings, null, 2)
-    );
+      // Detectar operações matemáticas complexas
+      BinaryExpression(node: any) {
+        if (isBinaryExpression(node) && node.operator === "**") {
+          heavyOperations.push({
+            message: "Complex mathematical operation (exponentiation)",
+          });
+        }
+      },
+    })
+  );
+
+  if (heavyOperations.length > 0) {
+    /* return {
+      message: `Heavy operations detected in initContext: ${heavyOperations.join(
+        ", "
+      )}`,
+      type: "HEAVY_INIT_CONTEXT",
+      value: heavyOperations.length,
+    }; */
+    return heavyOperations;
   }
 
-  return findings;
-} */
+  return null;
+}
 
-// function detectSetupExceptionSmell
+const detectors = {
+  heavyOperationsOnInitContext,
+};
+
+export default detectors;

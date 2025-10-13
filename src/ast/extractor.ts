@@ -2,6 +2,7 @@ import {
   AnonymousFunctionDeclaration,
   ExportDefaultDeclaration,
   ExportNamedDeclaration,
+  Expression,
   FunctionDeclaration,
   Identifier,
   Node,
@@ -19,6 +20,7 @@ import {
   isImportDeclaration,
   isImportExpression,
   isLiteral,
+  isObjectExpression,
   isProperty,
   isVariableDeclaration,
 } from "../utils/types.js";
@@ -37,7 +39,7 @@ import {
  * const options = extractOptions(ast);
  * ```
  */
-export function extractOptions(tree: Node, output?: string): Node {
+export function extractOptions(tree: Node, output?: string): Node | null {
   let optionsNode: Node | null = null;
 
   walk.simple(tree, {
@@ -54,9 +56,9 @@ export function extractOptions(tree: Node, output?: string): Node {
     },
   });
 
-  if (!optionsNode) {
+  /*   if (!optionsNode) {
     throw new NodeNotFoundException("Options variable not found");
-  }
+  } */
 
   if (output) {
     saveToFile(output + "options.json", JSON.stringify(optionsNode, null, 2));
@@ -255,7 +257,10 @@ export function extractDefaultFunctionByName(
  * const fnNode = extractFunctionByName(ast, "myFunction");
  * // Use fnNode to inspect parameters, body, etc.
  */
-export function extractFunctionByName(tree: Node, name: string): Node {
+export function extractFunctionDeclarationByName(
+  tree: Node,
+  name: string
+): Node {
   let targetNode: Node | null = null;
 
   walk.simple(tree, {
@@ -278,6 +283,8 @@ export function extractFunctionByName(tree: Node, name: string): Node {
 export function hasMultipleScenarions(tree: Node): boolean {
   try {
     const optionsNode = extractOptions(tree);
+    if (!optionsNode) return false;
+
     let hasScenarios = false;
 
     walk.simple(optionsNode, {
@@ -352,34 +359,26 @@ function extractScenarioFunctions(tree: Node) {
   return resultNodes;
 }
 
-/**
- * Verifica se algum cenário não tem executor definido ou usa a função default.
- * Quando um cenário não especifica 'exec', o k6 usa a função default exportada.
- *
- * @param tree - A árvore AST para analisar
- * @returns true se algum cenário usar implicitamente a função default
- */
 function hasScenarioUsingDefaultFunction(tree: Node): boolean {
   let hasDefaultScenario = false;
 
   walk.simple(tree, {
     Property(node) {
-      
       if (
         isIdentifier(node.key) &&
         node.key.name === "scenarios" &&
-        node.value.type === "ObjectExpression"
+        isObjectExpression(node.value)
       ) {
         for (const scenarioProperty of node.value.properties) {
           if (
-            scenarioProperty.type === "Property" &&
-            scenarioProperty.value.type === "ObjectExpression"
+            isProperty(scenarioProperty) &&
+            isObjectExpression(scenarioProperty.value)
           ) {
             let hasExecProperty = false;
 
             for (const prop of scenarioProperty.value.properties) {
               if (
-                prop.type === "Property" &&
+                isProperty(prop) &&
                 isIdentifier(prop.key) &&
                 prop.key.name === "exec"
               ) {

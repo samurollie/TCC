@@ -9,6 +9,7 @@ import {
   extractSetupFunction,
   extractTeardownFunction,
 } from "./ast/extractor.js";
+import detectors from "./smells/detectors.js";
 
 const SCRIPTS_DIR = "./k6-scripts";
 const OUTPUT_ROOT = "./src/out/";
@@ -41,10 +42,19 @@ function main() {
     const initContext = extractInitContext(tree, outputDir);
     const options = extractOptions(tree, outputDir);
     const setup = extractSetupFunction(tree, outputDir);
+    const mainFunctions = extractMainTestFunction(tree, outputDir);
     const teardown = extractTeardownFunction(tree, outputDir);
-    const main = extractMainTestFunction(tree, outputDir);
-    for (const functions of main) {
-      main.next();
+
+    /* for (const functions of mainFunctions) {
+      
+    } */
+
+    console.log("Procurando por operações pesadas no init context...");
+    const detected = detectors.heavyOperationsOnInitContext(initContext);
+    if (detected && detected.length > 0) {
+      console.log(detected);
+    } else {
+      console.log("Nada detectado!");
     }
 
     //Smell detections

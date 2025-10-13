@@ -1,7 +1,7 @@
 import { saveToFile } from "./file.js";
 import { Smell } from "./types.js";
 
-export function generateSmellsCSV(smells: Smell[], folder: string): void {
+/* export function generateSmellsCSV(smells: Smell[], folder: string): void {
   if (!folder) return;
 
   const csvHeader = "Type,Message,Line,Column,Value,Context\n";
@@ -17,3 +17,4 @@ export function generateSmellsCSV(smells: Smell[], folder: string): void {
   const csvContent = csvHeader + csvRows;
   saveToFile(folder + "smells.csv", csvContent);
 }
+ */
