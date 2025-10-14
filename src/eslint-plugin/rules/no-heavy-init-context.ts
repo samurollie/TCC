@@ -1,9 +1,5 @@
 import type { Rule } from "eslint";
-import {
-  isIdentifier,
-  isMemberExpression,
-  isNewExpression,
-} from "../../utils/types.js";
+import { isIdentifier, isMemberExpression } from "../../utils/types.js";
 import type {
   Node,
   CallExpression,
@@ -12,11 +8,11 @@ import type {
   ImportExpression,
   BinaryExpression,
 } from "estree";
-
-// Helper para acessar parent de um nó estree
-function getParent(node: Node): Node | undefined {
-  return (node as unknown as { parent?: Node }).parent;
-}
+import {
+  isFetchCall,
+  isHttpMemberCall,
+  isWithinSharedArrayCallback,
+} from "../utils/ast-helpers.js";
 
 const rule: Rule.RuleModule = {
   meta: {
@@ -70,16 +66,9 @@ const rule: Rule.RuleModule = {
           return;
         }
 
-        let parent = node.parent;
-        while (parent) {
-          if (
-            isNewExpression(parent) &&
-            (parent as unknown as { callee?: { name?: string } }).callee
-              ?.name === "SharedArray"
-          ) {
-            return;
-          }
-          parent = getParent(parent);
+        // ignore if within SharedArray callback
+        if (isWithinSharedArrayCallback(node)) {
+          return;
         }
 
         const callee = node.callee;
@@ -117,14 +106,20 @@ const rule: Rule.RuleModule = {
         }
 
         // Network operations
-        if (
-          isIdentifier(callee) &&
-          (callee.name === "fetch" || callee.name === "http")
-        ) {
+        if (isIdentifier(callee) && callee.name === "fetch") {
           context.report({
             node,
             messageId: "networkOperation",
           });
+        }
+        // http.* membro
+        if (isMemberExpression(callee)) {
+          // http.* member
+          const property = callee.property as Identifier;
+          const object = callee.object as Identifier;
+          if (object.name === "http") {
+            context.report({ node, messageId: "networkOperation" });
+          }
         }
 
         // Module loading operations
