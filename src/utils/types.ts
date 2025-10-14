@@ -1,36 +1,23 @@
-import {
+import type {
+  BinaryExpression,
+  CallExpression,
   ExportAllDeclaration,
   ExportDefaultDeclaration,
+  ExportNamedDeclaration,
   ExportSpecifier,
+  ForStatement,
+  FunctionDeclaration,
+  Identifier,
   ImportDeclaration,
   ImportExpression,
   Literal,
+  MemberExpression,
+  NewExpression,
+  ObjectExpression,
   Property,
-  Node,
-} from "acorn";
-import { CallExpression } from "acorn";
-import { BinaryExpression } from "acorn";
-import { WhileStatement } from "acorn";
-import { NewExpression } from "acorn";
-import { ObjectExpression } from "acorn";
-import { ForStatement } from "acorn";
-import { MemberExpression } from "acorn";
-import { ExportNamedDeclaration } from "acorn";
-import { FunctionDeclaration, Identifier, VariableDeclaration } from "acorn";
-import * as walk from "acorn-walk";
-
-export type Smell = {
-  message: string;
-  type?: string;
-  line?: number;
-  column?: number;
-  value?: string | number;
-};
-
-export interface IFunctionWalkerState {
-  targetFunctions: Set<string>;
-  foundFunctions: Record<string, FunctionDeclaration>;
-}
+  VariableDeclaration,
+  WhileStatement,
+} from "estree";
 
 export function isVariableDeclaration(node: any): node is VariableDeclaration {
   return node.type === "VariableDeclaration";
@@ -107,5 +94,5 @@ export function isObjectExpression(node: any): node is ObjectExpression {
 }
 
 export function isNewExpression(node: any): node is NewExpression {
-  return node.type === "NewExpression"
+  return node.type === "NewExpression";
 }

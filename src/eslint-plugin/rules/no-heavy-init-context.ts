@@ -1,11 +1,21 @@
 import type { Rule } from "eslint";
-import { isNewExpression } from "../../utils/types.js";
+import {
+  isIdentifier,
+  isMemberExpression,
+  isNewExpression,
+} from "../../utils/types.js";
+import type {
+  Node,
+  CallExpression,
+  Identifier,
+  MemberExpression,
+  ImportExpression,
+  BinaryExpression,
+} from "estree";
 
 // Helper para acessar parent de um nó estree
-function getParent(
-  node: import("estree").Node
-): import("estree").Node | undefined {
-  return (node as unknown as { parent?: import("estree").Node }).parent;
+function getParent(node: Node): Node | undefined {
+  return (node as unknown as { parent?: Node }).parent;
 }
 
 const rule: Rule.RuleModule = {
@@ -23,7 +33,7 @@ const rule: Rule.RuleModule = {
       fileOperation:
         "Avoid file operations in k6 init context. Consider using SharedArray for shared data.",
       jsonParsing:
-        "Avoid JSON parsing in k6 init context. Consider parsing inside SharedArray callback.",
+        "Avoid JSON parsing in k6 init context. Consider parsing inside SharedArray callback on in the setup function.",
       networkOperation:
         "Avoid network/HTTP operations in k6 init context. This should be done in the test function.",
       dynamicImport:
@@ -44,7 +54,6 @@ const rule: Rule.RuleModule = {
     }
 
     return {
-      // Track function depth to know if we're in init context
       "FunctionDeclaration, FunctionExpression, ArrowFunctionExpression"() {
         functionDepth++;
       },
@@ -53,16 +62,14 @@ const rule: Rule.RuleModule = {
       },
 
       CallExpression(
-        node: import("estree").CallExpression & {
-          parent?: import("estree").Node;
+        node: CallExpression & {
+          parent?: Node;
         }
       ) {
-        // Only check operations in init context (not inside functions)
         if (isInFunction()) {
           return;
         }
 
-        // Check if we're inside a SharedArray - this is allowed
         let parent = node.parent;
         while (parent) {
           if (
@@ -77,11 +84,7 @@ const rule: Rule.RuleModule = {
 
         const callee = node.callee;
 
-        // Detect file operations
-        if (
-          callee.type === "Identifier" &&
-          (callee as import("estree").Identifier).name === "open"
-        ) {
+        if (isIdentifier(callee) && callee.name === "open") {
           context.report({
             node,
             messageId: "fileOperation",
@@ -89,10 +92,9 @@ const rule: Rule.RuleModule = {
         }
 
         // Detect member expressions (obj.method())
-        if (callee.type === "MemberExpression") {
-          const member = callee as import("estree").MemberExpression;
-          const object = member.object as import("estree").Identifier;
-          const property = member.property as import("estree").Identifier;
+        if (isMemberExpression(callee)) {
+          const object = callee.object as Identifier;
+          const property = callee.property as Identifier;
 
           // File system operations
           if (
@@ -116,9 +118,8 @@ const rule: Rule.RuleModule = {
 
         // Network operations
         if (
-          callee.type === "Identifier" &&
-          ((callee as import("estree").Identifier).name === "fetch" ||
-            (callee as import("estree").Identifier).name === "http")
+          isIdentifier(callee) &&
+          (callee.name === "fetch" || callee.name === "http")
         ) {
           context.report({
             node,
@@ -127,10 +128,7 @@ const rule: Rule.RuleModule = {
         }
 
         // Module loading operations
-        if (
-          callee.type === "Identifier" &&
-          (callee as import("estree").Identifier).name === "require"
-        ) {
+        if (isIdentifier(callee) && callee.name === "require") {
           context.report({
             node,
             messageId: "moduleLoading",
@@ -139,7 +137,7 @@ const rule: Rule.RuleModule = {
       },
 
       // Detect dynamic imports
-      ImportExpression(node: import("estree").ImportExpression) {
+      ImportExpression(node: ImportExpression) {
         if (!isInFunction()) {
           context.report({
             node,
@@ -150,7 +148,7 @@ const rule: Rule.RuleModule = {
 
       // Detect loops in init context
       "ForStatement, WhileStatement, DoWhileStatement, ForInStatement, ForOfStatement"(
-        node: import("estree").Node
+        node: Node
       ) {
         if (!isInFunction()) {
           context.report({
@@ -161,7 +159,7 @@ const rule: Rule.RuleModule = {
       },
 
       // Detect complex mathematical operations
-      BinaryExpression(node: import("estree").BinaryExpression) {
+      BinaryExpression(node: BinaryExpression) {
         if (!isInFunction() && node.operator === "**") {
           context.report({
             node,
