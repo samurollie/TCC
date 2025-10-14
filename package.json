@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "test": "eslint k6-scripts/**/*.js",
-    "test:unit": "node tests/no-heavy-init-context.test.js",
+    "test:unit": "node tests/no-heavy-init-context.test.js && node tests/require-check.test.js",
     "test:all": "npm run test:unit && npm test",
     "prepublishOnly": "npm run build"
   },

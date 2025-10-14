@@ -1,5 +1,5 @@
 import noHeavyInitContext from "./eslint-plugin/rules/no-heavy-init-context.js";
-
+import requireCheck from "./eslint-plugin/rules/require-check.js";
 
 const plugin = {
   meta: {
@@ -8,12 +8,14 @@ const plugin = {
   },
   rules: {
     "no-heavy-init-context": noHeavyInitContext,
+    "require-check": requireCheck,
   },
   configs: {
     recommended: {
       plugins: ["k6-performance"],
       rules: {
         "k6-performance/no-heavy-init-context": "error",
+        "k6-performance/require-check": "error",
       },
     },
   },
