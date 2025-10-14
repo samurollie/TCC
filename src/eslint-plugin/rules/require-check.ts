@@ -47,6 +47,8 @@ const rule: Rule.RuleModule = {
     // Targets
     let defaultFunction: FuncNode | null = null;
     const scenarioExecNames = new Set<string>();
+    const checkNames = new Set<string>(["check"]); // local names valid for check()
+    const k6NamespaceNames = new Set<string>(); // local names for import * as k6 from 'k6'
 
     // Function state tracking
     const funcStack: FuncNode[] = [];
@@ -90,7 +92,24 @@ const rule: Rule.RuleModule = {
 
     function isCheckCall(node: CallExpression): boolean {
       const callee = node.callee;
-      return isIdentifier(callee) && (callee as any).name === "check";
+      // check(...) or check alias
+      if (isIdentifier(callee) && checkNames.has((callee as any).name)) {
+        return true;
+      }
+      // k6.check(...)
+      if (isMemberExpression(callee)) {
+        const obj: any = (callee as any).object;
+        const prop: any = (callee as any).property;
+        if (
+          isIdentifier(obj) &&
+          k6NamespaceNames.has(obj.name) &&
+          isIdentifier(prop) &&
+          prop.name === "check"
+        ) {
+          return true;
+        }
+      }
+      return false;
     }
 
     function collectScenarioExecNamesFromOptions(node: any) {
@@ -145,6 +164,26 @@ const rule: Rule.RuleModule = {
     return {
       Program(_node: any) {
         // nothing here; initialized above
+      },
+
+      // Detect imports from 'k6' to resolve check alias and namespace usage
+      ImportDeclaration(node: any) {
+        if (!node || node.type !== "ImportDeclaration") return;
+        const source = node.source?.value;
+        if (source !== "k6") return;
+        for (const spec of node.specifiers || []) {
+          if (spec.type === "ImportSpecifier") {
+            const importedName = spec.imported?.name;
+            const localName = spec.local?.name;
+            if (importedName === "check" && localName) {
+              checkNames.add(localName);
+            }
+          } else if (spec.type === "ImportNamespaceSpecifier") {
+            if (spec.local?.name) {
+              k6NamespaceNames.add(spec.local.name);
+            }
+          }
+        }
       },
 
       // Identify default export function node

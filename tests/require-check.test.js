@@ -28,6 +28,24 @@ ruleTester.run("require-check", rule, {
     }
     export default function () {}
     `,
+    // default function with alias of check
+    `
+    import http from 'k6/http';
+    import { check as assert } from 'k6';
+    export default function () {
+      const res = http.get('https://example.com');
+      assert(res, { ok: r => r.status === 200 });
+    }
+    `,
+    // namespace import k6.check
+    `
+    import http from 'k6/http';
+    import * as k6 from 'k6';
+    export default function () {
+      const res = http.get('https://example.com');
+      k6.check(res, { ok: r => r.status === 200 });
+    }
+    `,
   ],
   invalid: [
     // default function with http but no check
@@ -51,6 +69,17 @@ ruleTester.run("require-check", rule, {
       export default function () {}
       `,
       errors: [{ messageId: "missingCheckFunction" }],
+    },
+    // alias present but not used (should still fail)
+    {
+      code: `
+      import http from 'k6/http';
+      import { check as assert } from 'k6';
+      export default function () {
+        http.get('https://example.com');
+      }
+      `,
+      errors: [{ messageId: "missingCheckDefault" }],
     },
   ],
 });
