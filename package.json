@@ -13,9 +13,10 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "eslint k6-scripts/**/*.js",
-    "test:unit": "node tests/no-heavy-init-context.test.js && node tests/require-check.test.js",
-    "test:all": "npm run test:unit && npm test",
+    "lint": "npm run build && npm test",
+    "test": "node tests/no-heavy-init-context.test.js && node tests/require-check.test.js && node tests/feature-envy-tags.test.js",
+    "test:eslint": "eslint k6-scripts/**/*.js",
+    "test:all": "npm run build && npm run test && npm test:eslint",
     "prepublishOnly": "npm run build"
   },
   "author": {

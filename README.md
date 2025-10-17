@@ -91,3 +91,15 @@ Test the plugin:
 ```bash
 npm test
 ```
+
+Run ESLint (lint only) on k6 scripts:
+
+```bash
+npm run test:eslint
+```
+
+Run all checks (build + unit tests + ESLint):
+
+```bash
+npm run test:all
+```

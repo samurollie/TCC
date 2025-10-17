@@ -1,5 +1,8 @@
+import { check } from "k6";
 import http from "k6/http";
 
 export default function () {
-  http.get("https://example.com");
+  http.get("https://quickpizza.grafana.com");
+
+  check()
 }
