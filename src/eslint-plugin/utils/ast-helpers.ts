@@ -29,37 +29,39 @@ import {
 
 export type NodeWithParent = Node & { parent?: Node };
 
-export function isFetchCall(node: unknown): node is CallExpression {
+export function isFetchCall(node: any): node is CallExpression {
   if (!isCallExpression(node)) return false;
   const callee = node.callee;
   return isIdentifier(callee) && callee.name === "fetch";
 }
 
-export function isHttpMemberCall(node: unknown): node is CallExpression {
+export function isHttpMemberCall(node: any): node is CallExpression {
   if (!isCallExpression(node)) return false;
   const callee = node.callee;
+  
   if (!isMemberExpression(callee)) return false;
   const obj = callee.object;
+
   return isIdentifier(obj) && obj.name === "http";
 }
 
 export function isCheckIdentifier(
-  node: unknown,
+  node: any,
   checkNames: ReadonlySet<string>
 ): node is Identifier {
   return isIdentifier(node) && checkNames.has(node.name);
 }
 
 export function isK6CheckMember(
-  node: unknown,
-  namespaces: ReadonlySet<string>
+  node: any,
+  aliases: ReadonlySet<string>
 ): node is MemberExpression {
   if (!isMemberExpression(node)) return false;
   const obj = node.object;
   const prop = node.property;
   return (
     isIdentifier(obj) &&
-    namespaces.has(obj.name) &&
+    aliases.has(obj.name) &&
     isIdentifier(prop) &&
     prop.name === "check"
   );
@@ -136,7 +138,7 @@ export function collectScenarioExecNamesFromOptionsExport(
   }
 }
 
-export function isImportFromK6(node: unknown): node is ImportDeclaration {
+export function isImportFromK6(node: any): node is ImportDeclaration {
   if (!isImportDeclaration(node)) return false;
   return (
     node.source &&

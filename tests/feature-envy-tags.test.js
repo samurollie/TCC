@@ -19,6 +19,10 @@ ruleTester.run("feature-envy-tags", rule, {
       import http from 'k6/http';
       http.post('https://api.com/login', { tags: { name: 'LoginAPI' } });
     `,
+    `
+      import http from 'k6/http';
+      http.post('https://api.com/login');
+    `,
   ],
   invalid: [
     {

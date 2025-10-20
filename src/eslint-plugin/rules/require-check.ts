@@ -3,10 +3,32 @@ import {
   isIdentifier,
   isMemberExpression,
   isObjectExpression,
+  isImportDeclaration,
+  isExportNamedDeclaration,
+  isExportDefaultDeclaration,
+  isVariableDeclaration,
+  isProperty,
+  isLiteral,
+  isVariableDeclarator,
+  isFunctionDeclaration,
 } from "../utils/types.js";
-import type { Node, CallExpression } from "estree";
+import type {
+  Node,
+  CallExpression,
+  FunctionDeclaration,
+  FunctionExpression,
+  ArrowFunctionExpression,
+  ImportDeclaration,
+  ExportNamedDeclaration,
+  ExportDefaultDeclaration,
+  VariableDeclaration,
+  VariableDeclarator,
+} from "estree";
 
-type FuncNode = any; // Relax typing to align with ESLint NodeListener expectations
+type FuncNode =
+  | FunctionDeclaration
+  | FunctionExpression
+  | ArrowFunctionExpression;
 
 interface FuncState {
   name?: string;
@@ -46,6 +68,7 @@ const rule: Rule.RuleModule = {
   create(context: Rule.RuleContext) {
     // Targets
     let defaultFunction: FuncNode | null = null;
+    let exportDefaultNode: ExportDefaultDeclaration | null = null;
     const scenarioExecNames = new Set<string>();
     const checkNames = new Set<string>(["check"]); // local names valid for check()
     const k6NamespaceNames = new Set<string>(); // local names for import * as k6 from 'k6'
@@ -112,24 +135,26 @@ const rule: Rule.RuleModule = {
       return false;
     }
 
-    function collectScenarioExecNamesFromOptions(node: any) {
-      // export const/let options = { scenarios: { name: { exec: "foo" } } };
-      const decl = node.declaration;
+    function collectScenarioExecNamesFromOptions(node: Node) {
+      if (!isExportNamedDeclaration(node)) return;
+      const decl = (node as ExportNamedDeclaration)
+        .declaration as VariableDeclaration | null;
       if (!decl || decl.type !== "VariableDeclaration") return;
-      const first: any = decl.declarations[0];
+      const first = decl.declarations[0];
+      if (!first || !isVariableDeclarator(first)) return;
       if (
-        !first ||
-        first.id?.type !== "Identifier" ||
-        first.id.name !== "options"
+        !first.id ||
+        (first.id as any).type !== "Identifier" ||
+        (first.id as any).name !== "options"
       )
         return;
-      const init: any = first.init;
+      const init = first.init as Node | null;
       if (!init || !isObjectExpression(init)) return;
 
       for (const p of init.properties || []) {
-        if (p.type !== "Property") continue;
-        const prop: any = p;
-        const key: any = prop.key;
+        if (!isProperty(p)) continue;
+        const prop = p as any;
+        const key = prop.key as Node | null;
         if (
           key &&
           key.type === "Identifier" &&
@@ -137,21 +162,21 @@ const rule: Rule.RuleModule = {
           prop.value &&
           isObjectExpression(prop.value)
         ) {
-          const scenariosObj: any = prop.value;
+          const scenariosObj = prop.value;
           for (const s of scenariosObj.properties || []) {
-            if (s.type !== "Property") continue;
-            const scenarioVal: any = (s as any).value;
-            if (!isObjectExpression(scenarioVal)) continue;
+            if (!isProperty(s)) continue;
+            const scenarioVal = (s as any).value as Node | null;
+            if (!scenarioVal || !isObjectExpression(scenarioVal)) continue;
             for (const sp of scenarioVal.properties || []) {
-              if (sp.type !== "Property") continue;
-              const skey: any = (sp as any).key;
-              if (skey && skey.type === "Identifier" && skey.name === "exec") {
-                const sval: any = (sp as any).value;
-                if (
-                  sval &&
-                  sval.type === "Literal" &&
-                  typeof sval.value === "string"
-                ) {
+              if (!isProperty(sp)) continue;
+              const skey = (sp as any).key as Node | null;
+              if (
+                skey &&
+                skey.type === "Identifier" &&
+                (skey as any).name === "exec"
+              ) {
+                const sval = (sp as any).value as Node | null;
+                if (sval && isLiteral(sval) && typeof sval.value === "string") {
                   scenarioExecNames.add(String(sval.value));
                 }
               }
@@ -167,41 +192,45 @@ const rule: Rule.RuleModule = {
       },
 
       // Detect imports from 'k6' to resolve check alias and namespace usage
-      ImportDeclaration(node: any) {
-        if (!node || node.type !== "ImportDeclaration") return;
-        const source = node.source?.value;
+      ImportDeclaration(node: Node) {
+        if (!isImportDeclaration(node)) return;
+        const id = node as ImportDeclaration;
+        const source = id.source?.value;
         if (source !== "k6") return;
-        for (const spec of node.specifiers || []) {
+        for (const spec of id.specifiers || []) {
           if (spec.type === "ImportSpecifier") {
-            const importedName = spec.imported?.name;
-            const localName = spec.local?.name;
+            const importedName = (spec as any).imported?.name;
+            const localName = (spec as any).local?.name;
             if (importedName === "check" && localName) {
               checkNames.add(localName);
             }
           } else if (spec.type === "ImportNamespaceSpecifier") {
-            if (spec.local?.name) {
-              k6NamespaceNames.add(spec.local.name);
+            if ((spec as any).local?.name) {
+              k6NamespaceNames.add((spec as any).local.name);
             }
           }
         }
       },
 
       // Identify default export function node
-      ExportDefaultDeclaration(node: any) {
-        const decl = node.declaration as Node;
+      ExportDefaultDeclaration(node: Node) {
+        if (!isExportDefaultDeclaration(node)) return;
+        const decl = (node as ExportDefaultDeclaration)
+          .declaration as Node | null;
         if (isFunctionLike(decl)) {
-          defaultFunction = decl as FuncNode;
+          defaultFunction = decl;
+          exportDefaultNode = node as ExportDefaultDeclaration;
           markTarget(defaultFunction);
         }
       },
 
       // Collect scenario exec names from options
-      ExportNamedDeclaration(node: any) {
+      ExportNamedDeclaration(node: Node) {
         collectScenarioExecNamesFromOptions(node);
       },
 
       // Track named function declarations
-      FunctionDeclaration(node: any) {
+      FunctionDeclaration(node: FunctionDeclaration) {
         funcStack.push(node);
         const st = ensureFuncState(node);
         const name = node.id?.name;
@@ -221,7 +250,7 @@ const rule: Rule.RuleModule = {
       },
 
       // Track function expressions (possibly assigned to variables used in exec)
-      FunctionExpression(node: any) {
+      FunctionExpression(node: FunctionExpression) {
         funcStack.push(node);
         ensureFuncState(node);
         if (defaultFunction === node) {
@@ -231,7 +260,7 @@ const rule: Rule.RuleModule = {
       "FunctionExpression:exit"() {
         funcStack.pop();
       },
-      ArrowFunctionExpression(node: any) {
+      ArrowFunctionExpression(node: ArrowFunctionExpression) {
         funcStack.push(node);
         ensureFuncState(node);
         if (defaultFunction === node) {
@@ -243,16 +272,17 @@ const rule: Rule.RuleModule = {
       },
 
       // Map variable name to function expressions
-      VariableDeclarator(node: any) {
+      VariableDeclarator(node: VariableDeclarator) {
+        if (!isVariableDeclarator(node)) return;
         if (
-          node.id?.type === "Identifier" &&
+          (node.id as any)?.type === "Identifier" &&
           node.init &&
           isFunctionLike(node.init)
         ) {
           const fn = node.init as FuncNode;
-          funcByName.set(node.id.name, fn);
-          if (scenarioExecNames.has(node.id.name)) {
-            markTarget(fn, node.id.name);
+          funcByName.set((node.id as any).name, fn);
+          if (scenarioExecNames.has((node.id as any).name)) {
+            markTarget(fn, (node.id as any).name);
           }
         }
       },
@@ -274,9 +304,7 @@ const rule: Rule.RuleModule = {
           if (st && st.isTarget && st.hasHttp && !st.hasCheck) {
             // Report on the export default node for clarity
             context.report({
-              node:
-                (defaultFunction as unknown as { parent?: Node }).parent ||
-                (defaultFunction as Node),
+              node: exportDefaultNode || (defaultFunction as Node),
               messageId: "missingCheckDefault",
             });
           }
@@ -290,7 +318,9 @@ const rule: Rule.RuleModule = {
           if (st && st.isTarget && st.hasHttp && !st.hasCheck) {
             // Prefer reporting on the function id if present
             const reportNode =
-              fn.type === "FunctionDeclaration" && fn.id ? fn.id : (fn as Node);
+              isFunctionDeclaration(fn) && (fn as FunctionDeclaration).id
+                ? (fn as FunctionDeclaration).id
+                : (fn as Node);
             context.report({
               node: reportNode,
               messageId: "missingCheckFunction",
