@@ -23,15 +23,14 @@ const rule: Rule.RuleModule = {
     schema: [],
   },
   create(context) {
-    // Armazena tags usadas por endpoint
     const endpointTags: Record<string, string | undefined> = {};
-    // Armazena tags duplicadas
     const usedTags: Record<string, string[]> = {};
 
     return {
       CallExpression(node) {
         // Detecta chamadas http.get/post/etc
         if (!isHttpMemberCall(node)) return;
+
         const args = node.arguments;
         if (!args || args.length < 1) return;
         // Extrai endpoint
@@ -84,7 +83,7 @@ const rule: Rule.RuleModule = {
                 );
                 if (nodeEntry) {
                   context.report({
-                    node: context.getSourceCode().ast,
+                    node: context.sourceCode.ast,
                     messageId: "duplicateTag",
                     data: { tagName },
                   });

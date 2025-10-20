@@ -37,6 +37,20 @@ ruleTester.run("feature-envy-tags", rule, {
       `,
       errors: [{ messageId: "duplicateTag" }, { messageId: "duplicateTag" }],
     },
+    {
+      code: ` 
+      import http from "k6/http";
+      import { check } from "k6";
+
+      export default function () {
+        let r1 = http.get("https://quickpizza.grafana.com");
+        check(r1, { "root ok 1": (r) => r.status === 200 });
+        let r2 = http.get("https://quickpizza.grafana.com");
+        check(r2, { "root ok 2": (r) => r.status === 200 });
+      }
+      `,
+      errors: [{ messageId: "missingTags" }, { messageId: "missingTags" }],
+    },
   ],
 });
 

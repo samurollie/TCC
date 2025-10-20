@@ -5,7 +5,7 @@ import { Trend } from 'k6/metrics';
 const myTrend = new Trend('my_trend');
 
 export default function () {
-  // Múltiplas requisições sem tags (Feature Envy) — atualizadas para quickpizza
+  // Múltiplas requisições sem tags
   let r1 = http.get("https://quickpizza.grafana.com");
   check(r1, { "root ok 1": (r) => r.status === 200 });
   let r2 = http.get("https://quickpizza.grafana.com");

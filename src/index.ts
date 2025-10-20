@@ -18,6 +18,7 @@ const plugin = {
       rules: {
         "k6-performance/no-heavy-init-context": "error",
         "k6-performance/require-check": "error",
+        "k6-performance/feature-envy-tags": "error",
       },
     },
   },
