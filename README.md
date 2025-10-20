@@ -2,7 +2,7 @@
 
 ESLint plugin for detecting performance issues in k6 test scripts.
 
-## Installation
+<!-- ## Installation
 
 ```bash
 npm install --save-dev eslint-plugin-k6-performance
@@ -40,7 +40,7 @@ export default [
     ...k6Performance.configs.recommended,
   },
 ];
-```
+``` -->
 
 ## Rules
 
@@ -92,10 +92,10 @@ Test the plugin:
 npm test
 ```
 
-Run ESLint (lint only) on k6 scripts:
+Run ESLint (lint only) on `k6-scripts`:
 
 ```bash
-npm run test:eslint
+npm run lint
 ```
 
 Run all checks (build + unit tests + ESLint):
