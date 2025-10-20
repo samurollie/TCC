@@ -19,6 +19,8 @@ import type {
   WhileStatement,
 } from "estree";
 
+import type { ReturnStatement, VariableDeclarator } from "estree";
+
 export function isVariableDeclaration(node: any): node is VariableDeclaration {
   return node.type === "VariableDeclaration";
 }
@@ -95,4 +97,12 @@ export function isObjectExpression(node: any): node is ObjectExpression {
 
 export function isNewExpression(node: any): node is NewExpression {
   return node.type === "NewExpression";
+}
+
+export function isReturnStatement(node: any): node is ReturnStatement {
+  return node && node.type === "ReturnStatement";
+}
+
+export function isVariableDeclarator(node: any): node is VariableDeclarator {
+  return node && node.type === "VariableDeclarator";
 }

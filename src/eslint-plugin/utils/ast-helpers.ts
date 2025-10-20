@@ -9,6 +9,9 @@ import type {
   Node,
   ObjectExpression,
   Property,
+  Literal,
+  NewExpression,
+  VariableDeclarator,
 } from "estree";
 import {
   isCallExpression,
@@ -19,7 +22,10 @@ import {
   isMemberExpression,
   isObjectExpression,
   isProperty,
-} from "../../utils/types.js";
+  isExportNamedDeclaration,
+  isVariableDeclaration,
+  isVariableDeclarator,
+} from "./types.js";
 
 export type NodeWithParent = Node & { parent?: Node };
 
@@ -31,7 +37,7 @@ export function isFetchCall(node: unknown): node is CallExpression {
 
 export function isHttpMemberCall(node: unknown): node is CallExpression {
   if (!isCallExpression(node)) return false;
-  const callee = node.callee as MemberExpression;
+  const callee = node.callee;
   if (!isMemberExpression(callee)) return false;
   const obj = callee.object;
   return isIdentifier(obj) && obj.name === "http";
@@ -49,8 +55,8 @@ export function isK6CheckMember(
   namespaces: ReadonlySet<string>
 ): node is MemberExpression {
   if (!isMemberExpression(node)) return false;
-  const obj = (node as MemberExpression).object;
-  const prop = (node as MemberExpression).property;
+  const obj = node.object;
+  const prop = node.property;
   return (
     isIdentifier(obj) &&
     namespaces.has(obj.name) &&
@@ -74,14 +80,9 @@ export function findAncestor(
 export function isWithinSharedArrayCallback(node: NodeWithParent): boolean {
   // Checks if there is an ancestor NewExpression with callee Identifier 'SharedArray'
   const ancestor = findAncestor(node, (n) => {
-    if ((n as { type: string }).type !== "NewExpression") return false;
-    const maybeNew = n as unknown as { callee?: Node };
-    const callee = maybeNew.callee;
-    return (
-      !!callee &&
-      isIdentifier(callee) &&
-      callee.name === "SharedArray"
-    );
+    if (!isNewExpression(n)) return false;
+    const callee = n.callee;
+    return !!callee && isIdentifier(callee) && callee.name === "SharedArray";
   });
   return Boolean(ancestor);
 }
@@ -90,36 +91,41 @@ export function collectScenarioExecNamesFromOptionsExport(
   node: Node,
   addExecName: (name: string) => void
 ): void {
+  if (!isExportNamedDeclaration(node)) return;
   const en = node as ExportNamedDeclaration;
   // Checks if this is a named export with a variable declaration
-  if (!("declaration" in en) || !en.declaration) return;
+  if (!en.declaration) return;
   const decl = en.declaration;
-  if (decl.type !== "VariableDeclaration") return;
+  if (!isVariableDeclaration(decl)) return;
 
   for (const d of decl.declarations) {
-    const id = d.id as Node;
+    if (!isVariableDeclarator(d)) continue;
+    const declarator = d as VariableDeclarator;
+    const id = declarator.id;
     if (!isIdentifier(id) || id.name !== "options") continue;
-    const init = d.init as Node | null | undefined;
+    const init = declarator.init as Node | null | undefined;
     if (!init || !isObjectExpression(init)) continue;
 
     for (const p of init.properties ?? []) {
       if (!isProperty(p)) continue;
-      const keyNode = p.key as Node;
-      if (!isIdentifier(keyNode) || keyNode.name !== "scenarios") continue;
-      const scenariosValue = p.value as Node;
+      if (!isIdentifier(p.key)) continue;
+      const keyNode = p.key as Identifier;
+      if (keyNode.name !== "scenarios") continue;
+      const scenariosValue = p.value;
       if (!isObjectExpression(scenariosValue)) continue;
 
       for (const s of scenariosValue.properties ?? []) {
         if (!isProperty(s)) continue;
-        const scenarioVal = s.value as Node;
+        const scenarioVal = s.value;
         if (!isObjectExpression(scenarioVal)) continue;
         for (const sp of scenarioVal.properties ?? []) {
           if (!isProperty(sp)) continue;
-          const skey = sp.key as Node;
-          if (!isIdentifier(skey) || skey.name !== "exec") continue;
-          const sval = sp.value as Node;
-          if ((sval as { type?: string }).type === "Literal") {
-            const maybe = sval as unknown as { value?: unknown };
+          if (!isIdentifier(sp.key)) continue;
+          const skey = sp.key as Identifier;
+          if (skey.name !== "exec") continue;
+          const sval = sp.value;
+          if (isLiteral(sval)) {
+            const maybe = sval as Literal;
             if (typeof maybe.value === "string" && maybe.value.length > 0) {
               addExecName(maybe.value);
             }
@@ -135,8 +141,8 @@ export function isImportFromK6(node: unknown): node is ImportDeclaration {
   return (
     node.source &&
     typeof node.source === "object" &&
-    "value" in node.source &&
-    (node.source as { value?: unknown }).value === "k6"
+    isLiteral(node.source) &&
+    node.source.value === "k6"
   );
 }
 

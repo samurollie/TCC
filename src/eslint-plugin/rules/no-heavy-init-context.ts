@@ -1,5 +1,5 @@
 import type { Rule } from "eslint";
-import { isIdentifier, isMemberExpression } from "../../utils/types.js";
+import { isIdentifier, isMemberExpression } from "../utils/types.js";
 import type {
   Node,
   CallExpression,

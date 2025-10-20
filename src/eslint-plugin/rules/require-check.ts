@@ -3,7 +3,7 @@ import {
   isIdentifier,
   isMemberExpression,
   isObjectExpression,
-} from "../../utils/types.js";
+} from "../utils/types.js";
 import type { Node, CallExpression } from "estree";
 
 type FuncNode = any; // Relax typing to align with ESLint NodeListener expectations
