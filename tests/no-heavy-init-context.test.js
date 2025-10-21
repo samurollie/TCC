@@ -69,4 +69,4 @@ ruleTester.run("no-heavy-init-context", rule, {
   ],
 });
 
-console.log("All tests passed!");
+console.log("no-heavy-init-context passed!");

@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "npm run build && eslint k6-scripts/**/*.js",
-    "test": "npm run build && node tests/no-heavy-init-context.test.js && node tests/require-check.test.js && node tests/feature-envy-tags.test.js",
+    "test": "npm run build && node tests/no-heavy-init-context.test.js && node tests/require-check.test.js && node tests/require-tags.test.js",
     "test:all": "npm run build && npm run test && npm run lint",
     "prepublishOnly": "npm run build"
   },

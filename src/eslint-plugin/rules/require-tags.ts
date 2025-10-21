@@ -13,7 +13,7 @@ import {
 } from "../utils/types.js";
 
 /**
- * Regra: feature-envy-tags
+ * Regra: require-tags
  * Detecta múltiplas requisições HTTP distintas sem uso de tags únicas.
  */
 const rule: Rule.RuleModule = {

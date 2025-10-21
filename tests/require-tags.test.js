@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import rule from "../dist/eslint-plugin/rules/feature-envy-tags.js";
+import rule from "../dist/eslint-plugin/rules/require-tags.js";
 
 const ruleTester = new RuleTester({
   languageOptions: {
@@ -8,7 +8,7 @@ const ruleTester = new RuleTester({
   },
 });
 
-ruleTester.run("feature-envy-tags", rule, {
+ruleTester.run("require-tags", rule, {
   valid: [
     `
       import http from 'k6/http';
@@ -103,4 +103,4 @@ ruleTester.run("feature-envy-tags", rule, {
   ],
 });
 
-console.log("feature-envy-tags tests passed!");
+console.log("require-tags tests passed!");

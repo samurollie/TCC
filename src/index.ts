@@ -1,6 +1,6 @@
 import noHeavyInitContext from "./eslint-plugin/rules/no-heavy-init-context.js";
 import requireCheck from "./eslint-plugin/rules/require-check.js";
-import featureEnvyTags from "./eslint-plugin/rules/feature-envy-tags.js";
+import featureEnvyTags from "./eslint-plugin/rules/require-tags.js";
 
 const plugin = {
   meta: {
@@ -10,7 +10,7 @@ const plugin = {
   rules: {
     "no-heavy-init-context": noHeavyInitContext,
     "require-check": requireCheck,
-    "feature-envy-tags": featureEnvyTags,
+    "require-tags": featureEnvyTags,
   },
   configs: {
     recommended: {
@@ -18,7 +18,7 @@ const plugin = {
       rules: {
         "k6-performance/no-heavy-init-context": "error",
         "k6-performance/require-check": "error",
-        "k6-performance/feature-envy-tags": "error",
+        "k6-performance/require-tags": "error",
       },
     },
   },
