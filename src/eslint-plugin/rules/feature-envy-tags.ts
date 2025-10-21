@@ -35,9 +35,14 @@ const rule: Rule.RuleModule = {
   create(context) {
     const endpointTags: Record<string, string | undefined> = {};
     const usedTags: Record<string, string[]> = {};
-    const missingNodes: Array<{ node: any; endpoint: string }> = [];
-    const missingEndpoints = new Set<string>();
-    const variableToEndpoint: Record<string, string> = {};
+    const missingNodes: Array<{
+      node: any;
+      endpoint: string;
+      repeat?: boolean;
+    }> = [];
+    // dedupe by node identity (so distinct calls to same URL are counted separately)
+    const missingNodeSet = new WeakSet<any>();
+    const variableToHttpNode: Record<string, any> = {};
     return {
       CallExpression(node) {
         const isHttpCall = isHttpMemberCall(node);
@@ -48,7 +53,6 @@ const rule: Rule.RuleModule = {
         const isCheckCall =
           isK6CheckMember(calleeNode, new Set(["k6"])) ||
           isCheckIdentifier(calleeNode, checkNames);
-
 
         if (!isHttpCall && !isCheckCall) return;
 
@@ -66,14 +70,30 @@ const rule: Rule.RuleModule = {
           endpoint = (args[0] as any).value;
         }
 
-        // Se for um check(), tente mapear o primeiro argumento (resposta) para o endpoint
+        // Se for um check(), tente mapear o primeiro argumento (resposta) para o http node
         // correspondente (ex.: check(r1, ...), onde r1 foi atribuído de http.get(...)).
+        let httpNodeForThisCall: any = undefined;
         if (!isHttpCall && isCheckCall) {
           const firstArg = args[0];
           if (firstArg && firstArg.type === "Identifier") {
             const name = (firstArg as any).name;
-            if (name && variableToEndpoint[name]) {
-              endpoint = variableToEndpoint[name];
+            if (name && variableToHttpNode[name]) {
+              httpNodeForThisCall = variableToHttpNode[name];
+              // if we can extract endpoint string from the http node, prefer it
+              try {
+                const first =
+                  httpNodeForThisCall.arguments &&
+                  httpNodeForThisCall.arguments[0];
+                if (
+                  first &&
+                  first.type === "Literal" &&
+                  typeof first.value === "string"
+                ) {
+                  endpoint = first.value;
+                }
+              } catch (e) {
+                // ignore
+              }
             }
           }
         }
@@ -87,7 +107,7 @@ const rule: Rule.RuleModule = {
             parent.id &&
             isIdentifier(parent.id)
           ) {
-            variableToEndpoint[parent.id.name] = endpoint;
+            variableToHttpNode[parent.id.name] = node;
           }
         }
 
@@ -126,10 +146,26 @@ const rule: Rule.RuleModule = {
           if (!usedTags[tagName]) usedTags[tagName] = [];
           usedTags[tagName].push(endpoint);
         } else {
-          // acumula nós sem tag; evita duplicatas por endpoint
-          if (!missingEndpoints.has(endpoint)) {
-            missingNodes.push({ node, endpoint });
-            missingEndpoints.add(endpoint);
+          // acumula nós sem tag; evita duplicatas por node (http + check pair)
+          const dedupeNode = httpNodeForThisCall || node;
+          if (!missingNodeSet.has(dedupeNode)) {
+            // detect if this call is inside a loop (for/while/for..in/for..of)
+            let p = dedupeNode.parent;
+            let inLoop = false;
+            while (p) {
+              if (
+                p.type === "ForStatement" ||
+                p.type === "WhileStatement" ||
+                p.type === "ForInStatement" ||
+                p.type === "ForOfStatement"
+              ) {
+                inLoop = true;
+                break;
+              }
+              p = p.parent;
+            }
+            missingNodes.push({ node: dedupeNode, endpoint, repeat: inLoop });
+            missingNodeSet.add(dedupeNode);
           }
         }
       },
@@ -137,7 +173,7 @@ const rule: Rule.RuleModule = {
         // agrupa missingNodes por escopo (default/function/global)
         const byScope: Record<
           string,
-          Array<{ node: any; endpoint: string }>
+          Array<{ node: any; endpoint: string; repeat?: boolean }>
         > = {};
         for (const m of missingNodes) {
           // descobrir scope subindo a árvore
@@ -162,11 +198,10 @@ const rule: Rule.RuleModule = {
           byScope[scope].push(m);
         }
 
-        // reporta apenas se houver >1 por escopo
+        // reporta se houver >1 por escopo ou se alguma chamada estiver marcada como repeat (ex.: dentro de loop)
         for (const [scope, arr] of Object.entries(byScope)) {
-          // eslint-disable-next-line no-console
-          console.log("feature-envy: scope", scope, "count", arr.length);
-          if (arr.length > 1) {
+          const shouldReport = arr.length > 1 || arr.some((x) => x.repeat);
+          if (shouldReport) {
             for (const m of arr) {
               context.report({
                 node: m.node,
