@@ -51,9 +51,11 @@
     "@types/esquery": "^1.5.4",
     "@types/node": "^24.3.0",
     "@typescript-eslint/rule-tester": "^8.46.1",
+    "csv-parse": "^5.3.10",
     "eslint": "^9.37.0",
     "eslint-visitor-keys": "^4.2.1",
     "mocha": "^11.7.4",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "yargs": "^18.0.0"
   }
 }

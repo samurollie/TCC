@@ -103,3 +103,42 @@ Run all checks (build + unit tests + ESLint):
 ```bash
 npm run test:all
 ```
+
+## Scan de repositórios
+
+Este repositório contém um script de varredura que lê `k6-scripts/repositorios_k6.csv`, clona os repositórios listados, executa o ESLint (forçando o uso do plugin local) sobre os arquivos k6 indicados e gera um relatório CSV `k6-lint-results.csv`.
+
+Como usar:
+
+- Modo preview (não clona repositórios; simula a execução):
+
+```bash
+node scripts/scan-repos.js --preview --limit 10
+```
+
+- Scan real (clona e remove repositórios ao final):
+
+```bash
+node scripts/scan-repos.js --limit 5
+```
+
+- Scan real preservando os repositórios clonados (útil para depuração):
+
+```bash
+node scripts/scan-repos.js --limit 5 --keep-repos
+```
+
+Atalhos/aliases disponíveis:
+
+- `-p` é equivalente a `--preview`
+- `-l` é equivalente a `--limit`
+- `-k` é equivalente a `--keep-repos`
+
+Opções:
+
+- `--preview` : simula o processo sem clonar. (alias `-p`)
+- `--limit N` : processa apenas os primeiros N repositórios do CSV. (alias `-l`, deve ser inteiro >= 1)
+- `--keep-repos` : não apaga `temp/repos` ao final do scan. (alias `-k`)
+- `--verbose` : exibe logs verbosos sobre remoções de arquivos e diretórios durante o scan. (alias `-v`)
+
+O relatório `k6-lint-results.csv` contém as colunas: `repositório`, `url`, `arquivo`, `file_exists`, `clone_error` e uma coluna para cada regra do plugin indicando o número de ocorrências encontradas.
