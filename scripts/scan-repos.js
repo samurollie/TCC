@@ -1,414 +1,313 @@
 #!/usr/bin/env node
-// scripts/scan-repos.js
-// Lê k6-scripts/repositorios_k6.csv, clona cada repositório em temp/repos/<owner__repo>,
-// executa eslint nos arquivos indicados (relativo ao root do repo), e gera k6-lint-results.csv
-
-import fs from "fs";
+import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
-import os from "os";
+import { fileURLToPath, pathToFileURL } from "url";
 import { spawnSync } from "child_process";
-import { parse as csvParse } from "csv-parse/sync";
-import yargs from "yargs";
+import { parse } from "csv-parse/sync";
 import { hideBin } from "yargs/helpers";
-import { fileURLToPath } from "url";
+import yargs from "yargs/yargs";
+import { ESLint } from "eslint";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, "..");
-const csvPath = path.join(workspaceRoot, "k6-scripts", "repositorios_k6.csv");
-const tmpDir = path.join(workspaceRoot, "temp", "repos");
-const tmpScanDir = path.join(workspaceRoot, "temp", "scan");
-const outCsv = path.join(workspaceRoot, "k6-lint-results.csv");
 
 function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  try {
+    fsSync.mkdirSync(dir, { recursive: true });
+  } catch (e) {}
+}
+function safeName(s) {
+  return String(s || "")
+    .replace(/[:@/\\.]/g, "_")
+    .replace(/__+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
-ensureDir(tmpDir);
-ensureDir(tmpScanDir);
+async function main() {
+  const argv = yargs(hideBin(process.argv))
+    .option("preview", { alias: "p", type: "boolean" })
+    .option("limit", { alias: "l", type: "number" })
+    .option("keep-repos", { alias: "k", type: "boolean" })
+    .option("verbose", { alias: "v", type: "boolean" })
+    .option("summary", { type: "boolean" })
+    .option("debug", { type: "boolean" })
+    .help()
+    .parse();
+  const PREVIEW = Boolean(argv.preview);
+  const LIMIT =
+    argv.limit && Number.isInteger(argv.limit) && argv.limit > 0
+      ? argv.limit
+      : undefined;
+  const DEBUG = Boolean(argv.debug);
+  const VERBOSE = Boolean(argv.verbose) || DEBUG;
+  const SUMMARY = Boolean(argv.summary);
+  const KEEP_REPOS = Boolean(argv["keep-repos"]);
 
-let input;
-try {
-  input = fs.readFileSync(csvPath, "utf8");
-} catch (e) {
-  console.error(`Falha ao ler CSV ${csvPath}: ${e.message}`);
-  process.exit(1);
-}
-const records = csvParse(input, { columns: true, skip_empty_lines: true });
+  const csvPath = path.join(workspaceRoot, "k6-scripts", "repositorios_k6.csv");
+  const tempRoot = path.join(workspaceRoot, "temp");
+  const tempRepos = path.join(tempRoot, "repos");
+  const tempScan = path.join(tempRoot, "scan");
+  ensureDir(tempRepos);
+  ensureDir(tempScan);
 
-// build do plugin / workspace para garantir que o plugin está disponível
-console.log("Executando build do plugin (npm run build)");
-const buildRes = spawnSync("npm", ["run", "build"], {
-  cwd: workspaceRoot,
-  stdio: "inherit",
-});
-if (buildRes.status !== 0) {
-  console.error("Falha no build. Execute `npm run build` manualmente.");
-  process.exit(1);
-}
+  // logging helpers with local timezone ISO-like timestamp (with offset)
+  function formatLocalISO(d = new Date()) {
+    const pad = (n, z = 2) => String(n).padStart(z, "0");
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    const seconds = pad(d.getSeconds());
+    const ms = String(d.getMilliseconds()).padStart(3, "0");
+    const offsetMin = -d.getTimezoneOffset(); // minutes ahead of UTC
+    const sign = offsetMin >= 0 ? "+" : "-";
+    const absMin = Math.abs(offsetMin);
+    const offH = pad(Math.floor(absMin / 60));
+    const offM = pad(absMin % 60);
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}${sign}${offH}:${offM}`;
+  }
+  const timePrefix = () => `[${formatLocalISO()}]`;
+  const log = (...args) => console.log(timePrefix(), ...args);
+  const error = (...args) => console.error(timePrefix(), ...args);
+  const warn = (...args) => console.warn(timePrefix(), ...args);
+  const dump = (obj, opts) =>
+    console.dir(obj, { ...(opts || {}), depth: opts?.depth ?? 2 });
 
-// criar config forçado para aplicar nossas regras sempre
-const scanConfigPath = path.join(workspaceRoot, ".scan-eslint-config.json");
-const scanConfig = {
-  plugins: ["k6-performance"],
-  rules: {
-    "k6-performance/no-heavy-init-context": "error",
-    "k6-performance/require-check": "error",
-    "k6-performance/require-tags": "error",
-  },
-};
-try {
-  fs.writeFileSync(scanConfigPath, JSON.stringify(scanConfig), "utf8");
-} catch (e) {
-  console.error(
-    "Não foi possível escrever o config temporário para o scan:",
-    e.message
-  );
-  process.exit(1);
-}
-
-const rulesOfInterest = [
-  "k6-performance/require-tags",
-  "k6-performance/require-check",
-  "k6-performance/no-heavy-init-context",
-];
-
-const argv = yargs(hideBin(process.argv))
-  .usage("Usage: $0 [--preview] [--keep-repos] [--limit N]")
-  .option("preview", {
-    type: "boolean",
-    alias: "p",
-    description: "Run in preview mode (no cloning, only simulate)",
-  })
-  .option("limit", {
-    type: "number",
-    alias: "l",
-    description: "Only process first N repositories from the CSV",
-  })
-  .option("keep-repos", {
-    type: "boolean",
-    alias: "k",
-    description:
-      "Preserve cloned repositories under temp/repos AND temp/scan (do not delete at end)",
-  })
-  .option("verbose", {
-    type: "boolean",
-    alias: "v",
-    description: "Enable verbose logging for file and directory removals",
-  })
-  .help()
-  .alias("h", "help")
-  .parseSync();
-
-const PREVIEW = Boolean(
-  argv.preview || process.env.PREVIEW === "1" || process.env.PREVIEW === "true"
-);
-const KEEP_REPOS = Boolean(
-  argv["keep-repos"] ||
-    process.env.KEEP_REPOS === "1" ||
-    process.env.KEEP_REPOS === "true"
-);
-const VERBOSE = Boolean(
-  argv.verbose || process.env.VERBOSE === "1" || process.env.VERBOSE === "true"
-);
-let LIMIT =
-  typeof argv.limit === "number" && !Number.isNaN(argv.limit)
-    ? argv.limit
-    : undefined;
-if ((LIMIT === undefined || LIMIT === null) && process.env.LIMIT)
-  LIMIT = Number(process.env.LIMIT);
-if (typeof LIMIT !== "undefined") {
-  if (!Number.isInteger(LIMIT) || LIMIT < 1) {
-    console.error("--limit must be an integer >= 1");
+  if (VERBOSE) log("workspaceRoot", workspaceRoot);
+  if (VERBOSE) log("building plugin");
+  spawnSync("npm", ["run", "build"], {
+    cwd: workspaceRoot,
+    stdio: VERBOSE ? "inherit" : "ignore",
+  });
+  const distPlugin = path.join(workspaceRoot, "dist", "index.js");
+  if (!fsSync.existsSync(distPlugin)) {
+    error("plugin dist missing");
     process.exit(1);
   }
-}
+  const pluginModule = await import(pathToFileURL(distPlugin).href);
+  const plugin = pluginModule.default || pluginModule;
 
-// always use local eslint to ensure workspace plugin is used
-const localEslintPath = path.join(
-  workspaceRoot,
-  "node_modules",
-  ".bin",
-  "eslint"
-);
+  const csvRaw = await fs.readFile(csvPath, "utf8");
+  const records = parse(csvRaw, { columns: true, skip_empty_lines: true });
+  if (VERBOSE) log("rows", records.length);
 
-const rows = [];
-let processed = 0;
-for (const rec of records) {
-  if (LIMIT && processed >= LIMIT) break;
-  const repo = (rec["repositório"] || rec["repositorio"] || "").trim();
-  const url = (rec["url"] || "").trim();
-  const arquivosList = (rec["arquivos"] || rec["files"] || "").trim();
-  if (!repo || !url) continue;
-  const safeName = repo.replace(/\//g, "__");
-  const targetDir = path.join(tmpDir, safeName);
+  const rules = [
+    "k6-performance/require-tags",
+    "k6-performance/require-check",
+    "k6-performance/no-heavy-init-context",
+  ];
+  const eslint = new ESLint({
+    overrideConfig: {
+      plugins: { "k6-performance": plugin },
+      rules: Object.fromEntries(rules.map((r) => [r, "error"])),
+    },
+  });
 
-  let cloneError = "";
-  if (fs.existsSync(targetDir)) {
-    console.log(
-      `Repositório ${repo} já clonado em ${targetDir}, atualizando...`
-    );
+  const limit = LIMIT || records.length;
+  const outRows = [];
+
+  for (let i = 0; i < Math.min(limit, records.length); i++) {
+    const rec = records[i];
+    const repoName = rec.repositório || rec.repositorio || rec.repo || "";
+    const url = rec.url || rec.URL || rec.link || "";
+    const arquivos = String(rec.arquivos || rec.files || "")
+      .split(/\s*;\s*|\s*,\s*/)
+      .filter(Boolean);
+    const safe = safeName(url || repoName || `repo_${i}`);
+    const repoPath = path.join(tempRepos, safe);
+
+    if (VERBOSE) log(`\n[${i + 1}/${limit}] ${repoName} ${url} -> ${safe}`);
+
+    let cloneError = "";
     try {
-      spawnSync("git", ["-C", targetDir, "pull"], { stdio: "ignore" });
+      if (!PREVIEW) {
+        if (fsSync.existsSync(path.join(repoPath, ".git"))) {
+          if (VERBOSE) log("Repo exists, pulling", repoPath);
+          const pull = spawnSync("git", ["-C", repoPath, "pull"], {
+            stdio: VERBOSE ? "inherit" : "ignore",
+          });
+          if (pull.status !== 0) {
+            cloneError = `git pull failed (status ${pull.status})`;
+            if (VERBOSE) console.error(cloneError);
+          }
+        } else {
+          if (VERBOSE) log("Cloning", url, "->", repoPath);
+          const res = spawnSync(
+            "git",
+            ["clone", "--depth", "1", url, repoPath],
+            { stdio: VERBOSE ? "inherit" : "ignore" }
+          );
+          if (res.status !== 0) {
+            cloneError = `git clone failed (status ${res.status})`;
+            if (VERBOSE) error(cloneError);
+          } else if (VERBOSE) log("Clone completed for", url || repoName);
+        }
+      } else if (VERBOSE) log("[preview] skip clone");
     } catch (e) {
-      // ignore
+      cloneError = String(e && e.message ? e.message : e);
+      if (VERBOSE) error("Clone error", cloneError);
     }
-  } else {
-    if (PREVIEW) {
-      console.log(`[preview] clonaria ${url} -> ${targetDir}`);
-    } else {
-      console.log(`Clonando ${url} -> ${targetDir}`);
-      const res = spawnSync("git", ["clone", "--depth", "1", url, targetDir], {
-        stdio: "ignore",
-      });
-      if (res.status !== 0) {
-        cloneError = "clone_failed";
-        // register a row indicating clone failed (no specific file)
-        const baseRow = {
-          repositório: repo,
-          url,
-          arquivo: "",
-          file_exists: false,
-          clone_error: cloneError,
-        };
-        for (const r of rulesOfInterest) baseRow[r] = 0;
-        for (const r of rulesOfInterest) baseRow[r + "_loc"] = "";
-        rows.push(baseRow);
-        continue;
-      }
-    }
-    processed++;
-  }
 
-  const arquivos = arquivosList
-    ? arquivosList
-        .split(/[;|,]+/)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
-  if (arquivos.length === 0) {
-    const baseRow = {
-      repositório: repo,
-      url,
-      arquivo: "",
-      file_exists: false,
-      clone_error: cloneError,
-    };
-    for (const r of rulesOfInterest) baseRow[r] = 0;
-    for (const r of rulesOfInterest) baseRow[r + "_loc"] = "";
-    rows.push(baseRow);
-    continue;
-  }
-
-  for (const arquivoRel of arquivos) {
-    const arquivoPath = path.join(targetDir, arquivoRel);
-    const exists = fs.existsSync(arquivoPath);
-    if (!exists) {
-      const baseRow = {
-        repositório: repo,
+    if (arquivos.length === 0) {
+      const empty = {
+        repositório: repoName,
         url,
-        arquivo: arquivoRel,
-        file_exists: false,
+        arquivo: "",
+        file_exists: "no",
         clone_error: cloneError,
       };
-      for (const r of rulesOfInterest) baseRow[r] = 0;
-      for (const r of rulesOfInterest) baseRow[r + "_loc"] = "";
-      rows.push(baseRow);
+      for (const r of rules) {
+        empty[r] = 0;
+        empty[`${r}_loc`] = "";
+      }
+      outRows.push(empty);
       continue;
     }
 
-    // determine eslint binary
-    let eslintBin = fs.existsSync(localEslintPath) ? localEslintPath : "eslint";
-    if (!fs.existsSync(eslintBin)) {
-      console.error(
-        `ESLint não encontrado em ${localEslintPath} nem no PATH. Rode 'npm install' no workspace.`
-      );
-      process.exit(1);
-    }
-    if (VERBOSE) console.log(`Usando ESLint: ${eslintBin}`);
-
-    // copy file to tmpScanDir/safeName/... to avoid repo local configs
-    const destPath = path.join(tmpScanDir, safeName, arquivoRel);
-    ensureDir(path.dirname(destPath));
-
-    try {
-      fs.copyFileSync(arquivoPath, destPath);
-
-      const args = [destPath, "--format", "json", "--config", scanConfigPath];
-      const res = spawnSync(eslintBin, args, {
-        encoding: "utf8",
-        cwd: workspaceRoot,
-      });
-      if (res.error) {
-        const baseRow = {
-          repositório: repo,
-          url,
-          arquivo: arquivoRel,
-          file_exists: true,
-          clone_error: `eslint_error:${res.error.code}`,
-        };
-        for (const r of rulesOfInterest) baseRow[r] = 0;
-        for (const r of rulesOfInterest) baseRow[r + "_loc"] = "";
-        rows.push(baseRow);
-        continue;
-      }
-      let json = [];
-      try {
-        json = JSON.parse(res.stdout || "[]");
-      } catch (e) {
-        const baseRow = {
-          repositório: repo,
-          url,
-          arquivo: arquivoRel,
-          file_exists: true,
-          clone_error: `eslint_parse_error`,
-        };
-        for (const r of rulesOfInterest) baseRow[r] = 0;
-        for (const r of rulesOfInterest) baseRow[r + "_loc"] = "";
-        rows.push(baseRow);
-        continue;
-      }
-
-      const ruleFlags = Object.fromEntries(rulesOfInterest.map((r) => [r, 0]));
-      const ruleLocs = Object.fromEntries(
-        rulesOfInterest.map((r) => [r + "_loc", []])
-      );
-      for (const fileRes of json) {
-        for (const msg of fileRes.messages || []) {
-          if (
-            msg.ruleId &&
-            Object.prototype.hasOwnProperty.call(ruleFlags, msg.ruleId)
-          ) {
-            ruleFlags[msg.ruleId] = (ruleFlags[msg.ruleId] || 0) + 1;
-            const loc = `${msg.line || 0}:${msg.column || 0}`;
-            const short = msg.message
-              ? `${loc}:${String(msg.message).replace(/\s+/g, " ").trim()}`
-              : loc;
-            const key = msg.ruleId + "_loc";
-            if (ruleLocs[key]) ruleLocs[key].push(short);
-          }
-        }
-      }
-
-      const locStrings = Object.fromEntries(
-        Object.keys(ruleLocs).map((k) => [k, ruleLocs[k].join("; ")])
-      );
-      rows.push({
-        repositório: repo,
+    for (const arquivoRel of arquivos) {
+      const src = path.join(repoPath, arquivoRel);
+      const exists = fsSync.existsSync(src);
+      const row = {
+        repositório: repoName,
         url,
         arquivo: arquivoRel,
-        file_exists: true,
+        file_exists: exists ? "yes" : "no",
         clone_error: cloneError,
-        ...ruleFlags,
-        ...locStrings,
-      });
-    } finally {
-      // remove copied file unless KEEP_REPOS
-      try {
-        if (!KEEP_REPOS && fs.existsSync(destPath)) {
-          fs.unlinkSync(destPath);
-          if (VERBOSE) console.log(`Removida cópia de arquivo: ${destPath}`);
-        }
-      } catch (e) {
-        console.warn(
-          `Falha ao remover cópia de arquivo ${destPath}: ${e.message}`
-        );
+      };
+      for (const r of rules) {
+        row[r] = 0;
+        row[`${r}_loc`] = "";
       }
+      if (!exists) {
+        outRows.push(row);
+        continue;
+      }
+
+      const destDir = path.join(tempScan, safe);
+      ensureDir(destDir);
+      const dest = path.join(destDir, path.basename(arquivoRel));
+      if (VERBOSE) log("Copying", src, "->", dest);
+      try {
+        await fs.copyFile(src, dest);
+      } catch (e) {
+        if (VERBOSE) error("copy failed", e);
+        outRows.push(row);
+        continue;
+      }
+
+      try {
+        if (VERBOSE) log("Linting", dest);
+        const results = await eslint.lintFiles([dest]);
+        if (VERBOSE)
+          log(`ESLint returned ${results.length} result(s) for ${dest}`);
+        for (const res of results) {
+          if (VERBOSE)
+            log(
+              `  file: ${res.filePath} - ${res.errorCount || 0} errors, ${
+                res.warningCount || 0
+              } warnings`
+            );
+          for (const msg of res.messages || []) {
+            const rid = msg.ruleId || null;
+            const loc = `${msg.line || 0}:${msg.column || 0}`;
+            if (rid && rules.includes(rid)) {
+              row[rid] = (row[rid] || 0) + 1;
+              row[`${rid}_loc`] = row[`${rid}_loc`]
+                ? `${row[`${rid}_loc`]}; ${loc}`
+                : loc;
+              if (VERBOSE) log(`    ${rid} at ${loc}: ${msg.message}`);
+            } else if (VERBOSE)
+              log(`    ${msg.ruleId || "<no-rule>"} at ${loc}: ${msg.message}`);
+          }
+        }
+        if (DEBUG) dump(results, { depth: null });
+      } catch (e) {
+        if (VERBOSE || DEBUG) error("ESLint error", e);
+      } finally {
+        if (SUMMARY) {
+          const issues =
+            rules
+              .filter((r) => row[r] > 0)
+              .map(
+                (r) =>
+                  `${r}=${row[r]}${
+                    row[`${r}_loc`] ? `(${row[`${r}_loc`]})` : ""
+                  }`
+              )
+              .join("; ") || "none";
+          log(
+            `[${i + 1}/${limit}] ${repoName} ${arquivoRel} exists=${
+              exists ? "yes" : "no"
+            } issues=${issues}`
+          );
+        }
+        if (!KEEP_REPOS) {
+          try {
+            await fs.unlink(dest);
+          } catch (e) {
+            if (VERBOSE) warn("unlink failed", dest, e);
+          }
+        } else if (VERBOSE) console.log("Preserving scan copy at", dest);
+      }
+
+      outRows.push(row);
     }
+
+    if (!KEEP_REPOS && !PREVIEW) {
+      try {
+        fsSync.rmSync(repoPath, { recursive: true, force: true });
+        if (VERBOSE) log("Removed repo", repoPath);
+      } catch (e) {
+        if (VERBOSE) error("rm failed", e);
+      }
+    } else if (VERBOSE && KEEP_REPOS) log("Preserving repo", repoPath);
   }
 
-  // after processing repo files, remove scan repo dir if empty/unused and KEEP_REPOS is false
-  try {
-    const scanRepoDir = path.join(tmpScanDir, safeName);
-    if (!KEEP_REPOS && fs.existsSync(scanRepoDir)) {
-      fs.rmSync(scanRepoDir, { recursive: true, force: true });
-      if (VERBOSE)
-        console.log(`Removido cópia temporária do repo em: ${scanRepoDir}`);
-    } else if (KEEP_REPOS && VERBOSE) {
-      console.log(`Preservando cópias em: ${scanRepoDir}`);
-    }
-  } catch (e) {
-    console.warn(
-      `Falha ao remover cópia temporária do repo ${safeName}: ${e.message}`
+  const header = [
+    "repositório",
+    "url",
+    "arquivo",
+    "file_exists",
+    "clone_error",
+    ...rules.flatMap((r) => [r, `${r}_loc`]),
+  ];
+  const lines = [header.join(",")];
+  for (const r of outRows) {
+    lines.push(
+      header
+        .map((h) => {
+          const v = r[h];
+          if (v === undefined || v === null) return "";
+          const s = String(v);
+          if (s.includes(",") || s.includes('"'))
+            return `"${s.replace(/"/g, '""')}"`;
+          return s;
+        })
+        .join(",")
     );
   }
+  const outCsv = path.join(workspaceRoot, "k6-lint-results.csv");
+  await fs.writeFile(outCsv, lines.join("\n"), "utf8");
+  log("Wrote", outCsv);
 
-  // remove cloned repo unless PREVIEW or KEEP_REPOS
-  if (!PREVIEW && !KEEP_REPOS) {
+  if (!KEEP_REPOS) {
     try {
-      if (fs.existsSync(targetDir)) {
-        fs.rmSync(targetDir, { recursive: true, force: true });
-        if (VERBOSE)
-          console.log(`Removido repositório processado: ${targetDir}`);
-      }
+      fsSync.rmSync(tempRoot, { recursive: true, force: true });
+      if (VERBOSE) log("Removed temp root", tempRoot);
     } catch (e) {
-      console.warn(`Falha ao remover repositório ${targetDir}: ${e.message}`);
+      if (VERBOSE) error("cleanup failed", e);
     }
-  } else if (KEEP_REPOS && VERBOSE) {
-    console.log(`Preservando clone em: ${targetDir}`);
+  } else if (VERBOSE) {
+    log("Preserved temp at", tempRoot);
+    log("Preserved repos at", tempRepos);
+    log("Preserved scans at", tempScan);
   }
 }
 
-// escreve CSV
-const header = [
-  "repositório",
-  "url",
-  "arquivo",
-  "file_exists",
-  "clone_error",
-  ...rulesOfInterest,
-  ...rulesOfInterest.map((r) => r + "_loc"),
-];
-const out = [header.join(",")];
-for (const r of rows) {
-  const line = header
-    .map((h) => {
-      const v = r[h];
-      if (typeof v === "number") return String(v);
-      if (typeof v === "boolean") return v ? "true" : "false";
-      if (v === undefined) return "";
-      return `"${String(v).replace(/"/g, '""')}"`;
-    })
-    .join(",");
-  out.push(line);
-}
-fs.writeFileSync(outCsv, out.join(os.EOL), "utf8");
-console.log(`Relatório gerado: ${outCsv}`);
-
-// limpeza de config temporário
-try {
-  if (fs.existsSync(scanConfigPath)) {
-    fs.unlinkSync(scanConfigPath);
-    if (VERBOSE) console.log(`Removido config temporário: ${scanConfigPath}`);
-  }
-} catch (e) {
-  console.warn(`Falha ao remover ${scanConfigPath}: ${e.message}`);
-}
-
-// remover tmpScanDir somente se KEEP_REPOS false
-try {
-  if (!KEEP_REPOS && fs.existsSync(tmpScanDir)) {
-    fs.rmSync(tmpScanDir, { recursive: true, force: true });
-    if (VERBOSE)
-      console.log(`Removido diretório de cópias temporárias: ${tmpScanDir}`);
-  } else if (KEEP_REPOS && VERBOSE) {
-    console.log(`Preservando diretório de cópias temporárias: ${tmpScanDir}`);
-  }
-} catch (e) {
-  console.warn(`Falha ao remover ${tmpScanDir}: ${e.message}`);
-}
-
-// remover tmpDir (clones) somente se KEEP_REPOS false
-try {
-  if (!KEEP_REPOS && fs.existsSync(tmpDir)) {
-    // somente remover se estiver vazio ou for seguro
-    // optamos por remover inteiro para liberar espaço
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    if (VERBOSE)
-      console.log(`Removido diretório de repositórios clonados: ${tmpDir}`);
-  } else if (KEEP_REPOS && VERBOSE) {
-    console.log(`Preservando diretório de repositórios clonados: ${tmpDir}`);
-  }
-} catch (e) {
-  console.warn(`Falha ao remover ${tmpDir}: ${e.message}`);
-}
+main().catch((e) => {
+  error("Fatal", e);
+  process.exit(2);
+});

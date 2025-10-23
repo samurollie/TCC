@@ -140,5 +140,7 @@ Opções:
 - `--limit N` : processa apenas os primeiros N repositórios do CSV. (alias `-l`, deve ser inteiro >= 1)
 - `--keep-repos` : não apaga `temp/repos` ao final do scan. (alias `-k`)
 - `--verbose` : exibe logs verbosos sobre remoções de arquivos e diretórios durante o scan. (alias `-v`)
+- `--summary` : imprime uma linha concisa por arquivo/repositório com o resumo de problemas encontrados (útil para logs rápidos).
+- `--debug` : ativa modo debug — equivale a `--verbose` mais dump completo dos resultados do ESLint (útil para investigação profunda).
 
 O relatório `k6-lint-results.csv` contém as colunas: `repositório`, `url`, `arquivo`, `file_exists`, `clone_error` e uma coluna para cada regra do plugin indicando o número de ocorrências encontradas.
