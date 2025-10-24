@@ -94,14 +94,21 @@ async function main() {
   const records = parse(csvRaw, { columns: true, skip_empty_lines: true });
   if (VERBOSE) log("rows", records.length);
 
-  const rules = [
-    "k6-performance/require-tags",
-    "k6-performance/require-check",
-    "k6-performance/no-heavy-init-context",
-  ];
+  // detect rules from the compiled plugin automatically
+  const pluginName = "k6-performance";
+  const pluginRuleKeys =
+    plugin && plugin.rules ? Object.keys(plugin.rules) : [];
+  const rules = pluginRuleKeys.map((r) => `${pluginName}/${r}`);
+  if (rules.length === 0) {
+    // fallback to none and warn
+    if (VERBOSE)
+      warn(
+        "No rules detected in plugin; scanner will still run but report no rule columns."
+      );
+  }
   const eslint = new ESLint({
     overrideConfig: {
-      plugins: { "k6-performance": plugin },
+      plugins: { [pluginName]: plugin },
       rules: Object.fromEntries(rules.map((r) => [r, "error"])),
     },
   });
