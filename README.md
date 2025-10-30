@@ -78,6 +78,97 @@ export default function () {
 }
 ```
 
+### `require-tags`
+
+Garante que cada requisição HTTP em um script k6 tenha `tags` (útil para identificar requests em métricas e relatórios).
+
+❌ Incorrect:
+
+```javascript
+import http from "k6/http";
+
+export default function () {
+  http.get("https://example.com/api");
+}
+```
+
+✅ Correct:
+
+```javascript
+import http from "k6/http";
+
+export default function () {
+  http.get("https://example.com/api", null, { tags: { endpoint: "api" } });
+}
+```
+
+### `require-check`
+
+Detecta quando o script executa requisições HTTP em testes sem realizar `check()` nas respostas — checagens ajudam a validar comportamento funcional durante o load test.
+
+❌ Incorrect:
+
+```javascript
+import http from "k6/http";
+
+export default function () {
+  http.get("https://example.com/");
+}
+```
+
+✅ Correct:
+
+```javascript
+import http from "k6/http";
+import { check } from "k6";
+
+export default function () {
+  const r = http.get("https://example.com/");
+  check(r, { "status is 200": (res) => res.status === 200 });
+}
+```
+
+### `require-thresholds`
+
+Verifica se a exportação `options` (ou `module.exports` / `exports.options`) contém `thresholds` não vazios. Scripts de performance devem definir thresholds para estabelecer critérios de qualidade e evitar resultados ambíguos.
+
+Esta regra considera violação casos onde `options` não contém `thresholds` ou quando `thresholds` existe mas está vazio/sem regras literais.
+
+❌ Incorrect (sem thresholds):
+
+```javascript
+export const options = {
+  vus: 50,
+  duration: "30s",
+};
+
+export default function () {
+  /* ... */
+}
+```
+
+❌ Incorrect (thresholds vazio):
+
+```javascript
+export const options = {
+  vus: 10,
+  thresholds: {},
+};
+```
+
+✅ Correct:
+
+```javascript
+export const options = {
+  vus: 20,
+  thresholds: {
+    http_req_duration: ["p(95) < 500"],
+  },
+};
+```
+
+> Observação: a regra tenta detectar padrões literais comuns (export const, `module.exports =`, `exports.options =`, `export { options }`). Casos dinâmicos complexos (thresholds construídos em tempo de execução) podem requerer revisão manual.
+
 ## Development
 
 Build the plugin:
