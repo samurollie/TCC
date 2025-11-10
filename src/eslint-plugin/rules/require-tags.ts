@@ -6,12 +6,7 @@ import {
   isCheckIdentifier,
   collectScenarioExecNamesFromOptionsExport,
 } from "../utils/ast-helpers.js";
-import {
-  isVariableDeclarator,
-  isIdentifier,
-  isLiteral as isLit,
-} from "../utils/types.js";
-import type { Node } from "estree";
+import { isVariableDeclarator, isIdentifier } from "../utils/types.js";
 
 /**
  * Regra: require-tags
@@ -41,16 +36,17 @@ const rule: Rule.RuleModule = {
       endpoint: string;
       repeat?: boolean;
     }> = [];
-    const httpWithChecks = new WeakSet<Node>();
     // dedupe by node identity (so distinct calls to same URL are counted separately)
     const missingNodeSet = new WeakSet<any>();
     const variableToHttpNode: Record<string, any> = {};
+    const httpWithChecks = new WeakSet<any>();
+
     return {
       CallExpression(node) {
         const isHttpCall = isHttpMemberCall(node);
 
         // detect `check(...)` (identifier) or `k6.check(...)` (member)
-        const calleeNode = node.callee;
+        const calleeNode = (node as any).callee;
         const checkNames = new Set(["check"]);
         const isCheckCall =
           isK6CheckMember(calleeNode, new Set(["k6"])) ||
@@ -58,8 +54,7 @@ const rule: Rule.RuleModule = {
 
         if (!isHttpCall && !isCheckCall) return;
 
-        const args = node.arguments;
-        if (!args) return;
+        const args = (node as any).arguments || [];
 
         // Extrai endpoint/label
         let endpoint = isHttpCall ? "http" : "check";
@@ -72,28 +67,128 @@ const rule: Rule.RuleModule = {
           endpoint = (args[0] as any).value;
         }
 
-        // Se for um check(), tente mapear o primeiro argumento (resposta) para o http node
-        // correspondente (ex.: check(r1, ...), onde r1 foi atribuído de http.get(...)).
+        // Map a possible http node that this check refers to
         let httpNodeForThisCall: any = undefined;
+
         if (!isHttpCall && isCheckCall) {
           const firstArg = args[0];
+
+          // check(resVar, ...)
           if (firstArg && firstArg.type === "Identifier") {
             const name = (firstArg as any).name;
             if (name && variableToHttpNode[name]) {
               httpNodeForThisCall = variableToHttpNode[name];
-              // mark that this http node has an associated check
-              httpWithChecks.add(httpNodeForThisCall);
-              // if we can extract endpoint string from the http node, prefer it
+              try {
+                httpWithChecks.add(httpNodeForThisCall);
+              } catch (e) {}
+              // try to extract literal endpoint from http call
+              try {
+                const first =
+                  httpNodeForThisCall.arguments &&
+                  httpNodeForThisCall.arguments[0];
+                if (
+                  first &&
+                  first.type === "Literal" &&
+                  typeof first.value === "string"
+                ) {
+                  endpoint = first.value;
+                }
+              } catch (e) {}
+            }
+          }
 
-              const first =
-                httpNodeForThisCall.arguments &&
-                httpNodeForThisCall.arguments[0];
-              if (
-                first &&
-                first.type === "Literal" &&
-                typeof first.value === "string"
-              ) {
-                endpoint = first.value;
+          // check(responses[0], ...) when responses = http.batch([...])
+          if (firstArg && firstArg.type === "MemberExpression") {
+            const obj = (firstArg as any).object;
+            const prop = (firstArg as any).property;
+            if (obj && obj.type === "Identifier" && prop) {
+              const varName = obj.name;
+              const httpCall = variableToHttpNode[varName];
+              if (httpCall) {
+                try {
+                  const callee = httpCall.callee;
+                  const isBatchCall =
+                    callee &&
+                    callee.type === "MemberExpression" &&
+                    callee.object &&
+                    callee.object.type === "Identifier" &&
+                    callee.object.name === "http" &&
+                    callee.property &&
+                    callee.property.type === "Identifier" &&
+                    callee.property.name === "batch";
+                  if (isBatchCall) {
+                    const batchArg =
+                      httpCall.arguments && httpCall.arguments[0];
+                    if (batchArg && batchArg.type === "ArrayExpression") {
+                      const idx =
+                        prop.type === "Literal" &&
+                        typeof prop.value === "number"
+                          ? prop.value
+                          : null;
+                      if (
+                        idx !== null &&
+                        batchArg.elements &&
+                        batchArg.elements[idx]
+                      ) {
+                        const entry = batchArg.elements[idx];
+                        if (
+                          entry &&
+                          entry.type === "ArrayExpression" &&
+                          entry.elements
+                        ) {
+                          const urlNode = entry.elements[1];
+                          if (
+                            urlNode &&
+                            urlNode.type === "Literal" &&
+                            typeof urlNode.value === "string"
+                          ) {
+                            endpoint = urlNode.value;
+                          }
+                          const optionsNode = entry.elements[3];
+                          if (
+                            optionsNode &&
+                            optionsNode.type === "ObjectExpression"
+                          ) {
+                            const tagsProp = optionsNode.properties.find(
+                              (p: any) =>
+                                p.key &&
+                                (p.key.name === "tags" ||
+                                  (p.key.type === "Literal" &&
+                                    p.key.value === "tags"))
+                            );
+                            if (
+                              tagsProp &&
+                              tagsProp.value &&
+                              tagsProp.value.type === "ObjectExpression"
+                            ) {
+                              const candidate = tagsProp.value.properties.find(
+                                (np: any) =>
+                                  np &&
+                                  np.value &&
+                                  np.value.type === "Literal" &&
+                                  typeof np.value.value === "string"
+                              );
+                              if (
+                                candidate &&
+                                candidate.value &&
+                                candidate.value.type === "Literal"
+                              ) {
+                                // use found tagName from batch entry
+                                // (we'll set tagName below when reading options)
+                                // record it now by setting a temporary variable
+                                // but we still reuse the common flow below
+                              }
+                            }
+                          }
+                          httpNodeForThisCall = entry;
+                          try {
+                            httpWithChecks.add(entry);
+                          } catch (e) {}
+                        }
+                      }
+                    }
+                  }
+                } catch (e) {}
               }
             }
           }
