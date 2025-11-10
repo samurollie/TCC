@@ -57,6 +57,61 @@ ruleTester.run("require-tags", rule, {
       sleep(1);
     }
     `,
+    `
+    import http from "k6/http";
+import { check } from "k6";
+
+export const options = {
+  thresholds: {
+    // Thresholds granulares, por tag:
+    "http_req_duration{name:Login}": ["p(95)<300"], // Login deve ser rápido
+    "http_req_duration{name:Products}": ["p(95)<1000"], // Produtos pode ser mais lento
+    "http_req_duration{name:Cart}": ["p(95)<500"],
+
+    // Thresholds de verificação granulares:
+    "checks{check_name:Login com sucesso}": ["rate>0.99"], // Login deve ter 99% de sucesso
+    "checks{check_name:Produtos carregados}": ["rate>0.95"],
+    "checks{check_name:Carrinho carregado}": ["rate>0.99"],
+  },
+};
+
+export default function () {
+  // 1. Requisição de Login
+  let resLogin = http.get("https://api.minha-loja.com/v2/login", {
+    tags: { name: "Login" },
+  });
+  check(
+    resLogin,
+    { "Login com sucesso": (r) => r.status === 200 },
+    { check_name: "Login com sucesso" }
+  );
+
+  // 2. Requisição de Produtos
+  let resProducts = http.get("https://api.minha-loja.com/v2/products", {
+    tags: { name: "Products" },
+  });
+  check(
+    resProducts,
+    { "Produtos carregados": (r) => r.status === 200 },
+    { check_name: "Produtos carregados" }
+  );
+
+  // 3. Requisição do Carrinho
+  let resCart = http.get("https://api.minha-loja.com/v2/cart", {
+    tags: { name: "Cart" },
+  });
+  check(
+    resCart,
+    { "Carrinho carregado": (r) => r.status === 200 },
+    { check_name: "Carrinho carregado" }
+  );
+}
+
+export function handleSummary(data) {
+  return { "raw-data.json": JSON.stringify(data) };
+}
+
+    `,
   ],
   invalid: [
     {
