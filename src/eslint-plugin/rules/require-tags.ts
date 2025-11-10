@@ -11,6 +11,7 @@ import {
   isIdentifier,
   isLiteral as isLit,
 } from "../utils/types.js";
+import type { Node } from "estree";
 
 /**
  * Regra: require-tags
@@ -40,6 +41,7 @@ const rule: Rule.RuleModule = {
       endpoint: string;
       repeat?: boolean;
     }> = [];
+    const httpWithChecks = new WeakSet<Node>();
     // dedupe by node identity (so distinct calls to same URL are counted separately)
     const missingNodeSet = new WeakSet<any>();
     const variableToHttpNode: Record<string, any> = {};
@@ -79,20 +81,19 @@ const rule: Rule.RuleModule = {
             const name = (firstArg as any).name;
             if (name && variableToHttpNode[name]) {
               httpNodeForThisCall = variableToHttpNode[name];
+              // mark that this http node has an associated check
+              httpWithChecks.add(httpNodeForThisCall);
               // if we can extract endpoint string from the http node, prefer it
-              try {
-                const first =
-                  httpNodeForThisCall.arguments &&
-                  httpNodeForThisCall.arguments[0];
-                if (
-                  first &&
-                  first.type === "Literal" &&
-                  typeof first.value === "string"
-                ) {
-                  endpoint = first.value;
-                }
-              } catch (e) {
-                // ignore
+
+              const first =
+                httpNodeForThisCall.arguments &&
+                httpNodeForThisCall.arguments[0];
+              if (
+                first &&
+                first.type === "Literal" &&
+                typeof first.value === "string"
+              ) {
+                endpoint = first.value;
               }
             }
           }
@@ -120,23 +121,31 @@ const rule: Rule.RuleModule = {
         let tagName: string | undefined;
         if (options) {
           const tagsProp = options.properties.find(
-            (p: any) => p.key && p.key.name === "tags"
+            (p: any) =>
+              p.key &&
+              (p.key.name === "tags" ||
+                (p.key.type === "Literal" && p.key.value === "tags"))
           );
           if (
             tagsProp &&
             tagsProp.value &&
             tagsProp.value.type === "ObjectExpression"
           ) {
-            const nameProp = tagsProp.value.properties.find(
-              (np: any) => np.key && np.key.name === "name"
-            );
+            // Accept any property inside tags as identifying tag value (e.g. { name: 'X' } or { my_tag: 'X' })
+            const candidate = tagsProp.value.properties.find((np: any) => {
+              return (
+                np &&
+                np.value &&
+                np.value.type === "Literal" &&
+                typeof np.value.value === "string"
+              );
+            });
             if (
-              nameProp &&
-              nameProp.value &&
-              nameProp.value.type === "Literal" &&
-              typeof nameProp.value.value === "string"
+              candidate &&
+              candidate.value &&
+              candidate.value.type === "Literal"
             ) {
-              tagName = nameProp.value.value;
+              tagName = candidate.value.value;
             }
           }
         }
@@ -148,6 +157,8 @@ const rule: Rule.RuleModule = {
         } else {
           // acumula nós sem tag; evita duplicatas por node (http + check pair)
           const dedupeNode = httpNodeForThisCall || node;
+          // if this http node has an associated check or was seen with a tag earlier, skip
+          if (httpWithChecks.has(dedupeNode)) return;
           if (!missingNodeSet.has(dedupeNode)) {
             // detect if this call is inside a loop (for/while/for..in/for..of)
             let p = dedupeNode.parent;
