@@ -1,5 +1,4 @@
 repositório,url,arquivos
-samurollie/tests-TCC,https://github.com/samurollie/tests-TCC,k6-scripts/smell examples/missing-check.js;k6-scripts/smell examples/missing-tags.js;k6-scripts/smell examples/init-context-heavy-operations.js
 HariSekhon/Templates,https://github.com/HariSekhon/Templates,k6.js
 grafana/setup-k6-action,https://github.com/grafana/setup-k6-action,src/k6.ts
 MieuxVoter/majority-judgment-api-python,https://github.com/MieuxVoter/majority-judgment-api-python,k6/index.js
