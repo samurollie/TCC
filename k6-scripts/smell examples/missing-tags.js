@@ -11,16 +11,6 @@ export default function () {
   let r2 = http.get("https://quickpizza.grafana.com");
   check(r2, { "root ok 2": (r) => r.status === 200 });
 
-  // Chamadas com tags duplicadas (má prática)
-  let r3 = http.get("https://quickpizza.grafana.com", {
-    tags: { name: "API" },
-  });
-  check(r3, { "root ok 3": (r) => r.status === 200 });
-  let r4 = http.get("https://quickpizza.grafana.com", {
-    tags: { name: "API" },
-  });
-  check(r4, { "root ok 4": (r) => r.status === 200 });
-
   // Uso correto (exemplo)
   let r5 = http.get("https://quickpizza.grafana.com", {
     tags: { my_tag: "HealthCheck" },
