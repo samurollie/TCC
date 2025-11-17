@@ -29,7 +29,7 @@ const rule: Rule.RuleModule = {
       fileOperation:
         "Avoid file operations in k6 init context. Consider using SharedArray for shared data.",
       jsonParsing:
-        "Avoid JSON parsing in k6 init context. Consider parsing inside SharedArray callback on in the setup function.",
+        "Avoid JSON parsing in k6 init context. Consider parsing inside SharedArray callback or in the setup function.",
       loopOperation:
         "Avoid loops in k6 init context. Move heavy processing to SharedArray callback.",
       complexMath: "Avoid complex mathematical operations in k6 init context.",
