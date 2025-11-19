@@ -26,3 +26,5 @@ tmp/
 .env.local
 
 temp/
+
+venv/
