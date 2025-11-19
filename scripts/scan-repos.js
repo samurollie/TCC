@@ -45,7 +45,7 @@ async function main() {
   const SUMMARY = Boolean(argv.summary);
   const KEEP_REPOS = Boolean(argv["keep-repos"]);
 
-  const csvPath = path.join(workspaceRoot, "k6-scripts", "repositorios_k6.csv");
+  const csvPath = path.join(workspaceRoot, "scripts", "repositorios_k6.csv");
   const tempRoot = path.join(workspaceRoot, "temp");
   const tempRepos = path.join(tempRoot, "repos");
   const tempScan = path.join(tempRoot, "scan");
