@@ -2,46 +2,6 @@
 
 ESLint plugin for detecting performance issues in k6 test scripts.
 
-<!-- ## Installation
-
-```bash
-npm install --save-dev eslint-plugin-k6-performance
-
-```
-
-## Usage
-
-Add the plugin to your ESLint configuration:
-
-```javascript
-import k6Performance from "eslint-plugin-k6-performance";
-
-export default [
-  {
-    files: ["k6-scripts/**/*.js"],
-    plugins: {
-      "k6-performance": k6Performance,
-    },
-    rules: {
-      "k6-performance/no-heavy-init-context": "error",
-    },
-  },
-];
-```
-
-Or use the recommended configuration:
-
-```javascript
-import k6Performance from "eslint-plugin-k6-performance";
-
-export default [
-  {
-    files: ["k6-scripts/**/*.js"],
-    ...k6Performance.configs.recommended,
-  },
-];
-``` -->
-
 ## Rules
 
 ### `no-heavy-init-context`
@@ -130,7 +90,7 @@ export default function () {
 
 ### `require-thresholds`
 
-Verifica se a exportação `options` (ou `module.exports` / `exports.options`) contém `thresholds` não vazios. Scripts de performance devem definir thresholds para estabelecer critérios de qualidade e evitar resultados ambíguos.
+Verifica se a exportação `options` contém `thresholds` não vazios. Scripts de performance devem definir thresholds para estabelecer critérios de qualidade e evitar resultados ambíguos.
 
 Esta regra considera violação casos onde `options` não contém `thresholds` ou quando `thresholds` existe mas está vazio/sem regras literais.
 
@@ -167,7 +127,7 @@ export const options = {
 };
 ```
 
-> Observação: a regra tenta detectar padrões literais comuns (export const, `module.exports =`, `exports.options =`, `export { options }`). Casos dinâmicos complexos (thresholds construídos em tempo de execução) podem requerer revisão manual.
+> Observação: a regra tenta detectar padrões literais comuns (`export const`, `module.exports =`, `exports.options =`, `export { options }`). Casos dinâmicos complexos (thresholds construídos em tempo de execução) podem requerer revisão manual.
 
 ## Development
 
@@ -196,6 +156,8 @@ npm run test:all
 ```
 
 ## Scan de repositórios
+
+<!-- Na pasta `scripts` -->
 
 Este repositório contém um script de varredura que lê `k6-scripts/repositorios_k6.csv`, clona os repositórios listados, executa o ESLint (forçando o uso do plugin local) sobre os arquivos k6 indicados e gera um relatório CSV `k6-lint-results.csv`.
 
