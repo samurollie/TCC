@@ -1,0 +1,4 @@
+repositório,status,loc,time_s,log
+HariSekhon/Templates,ok,20655,2.98,clone_logs/HariSekhon__Templates.log
+grafana/setup-k6-action,ok,39193,3.06,clone_logs/grafana__setup-k6-action.log
+hari-p8-io/RestVsGrpc,ok,21572,2.61,clone_logs/hari-p8-io__RestVsGrpc.log
