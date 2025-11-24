@@ -1,24 +1,23 @@
 import { Rule } from "eslint";
-// Função utilitária para extrair chamadas http.get/post/etc
 import {
   isHttpMemberCall,
   isK6CheckMember,
   isCheckIdentifier,
-  collectScenarioExecNamesFromOptionsExport,
 } from "../utils/ast-helpers.js";
 import { isVariableDeclarator, isIdentifier } from "../utils/types.js";
 
 /**
  * Regra: require-tags
- * Detecta múltiplas requisições HTTP distintas sem uso de tags únicas.
+ * Detecta múltiplas requisições HTTP e checks distintos sem uso de tags únicas.
  */
 const rule: Rule.RuleModule = {
   meta: {
     type: "problem",
     docs: {
-      description: "Detecta requisições HTTP sem tags únicas (Feature Envy)",
+      description: "Detecta requisições HTTP e checks sem tags",
       category: "Best Practices",
       recommended: false,
+      url:""
     },
     messages: {
       missingTags:
@@ -29,7 +28,7 @@ const rule: Rule.RuleModule = {
     schema: [],
   },
   create(context) {
-    const endpointTags: Record<string, string | undefined> = {};
+    const endpointTags: Record<string, string | undefined> = {}; 
     const usedTags: Record<string, string[]> = {};
     const missingNodes: Array<{
       node: any;
