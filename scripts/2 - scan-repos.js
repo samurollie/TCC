@@ -45,7 +45,12 @@ async function main() {
   const SUMMARY = Boolean(argv.summary);
   const KEEP_REPOS = Boolean(argv["keep-repos"]);
 
-  const csvPath = path.join(workspaceRoot, "scripts", "repositorios_k6.csv");
+  const csvPath = path.join(
+    workspaceRoot,
+    "scripts",
+    "output",
+    "repositorios_k6.csv"
+  );
   const tempRoot = path.join(workspaceRoot, "temp");
   const tempRepos = path.join(tempRoot, "repos");
   const tempScan = path.join(tempRoot, "scan");
@@ -315,6 +320,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  error("Fatal", e);
+  // 'error' is defined inside main(); use console.error here to avoid ReferenceError
+  console.error("Fatal", e);
   process.exit(2);
 });
