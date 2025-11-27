@@ -301,7 +301,7 @@ async function main() {
         .join(",")
     );
   }
-  const outCsv = path.join(workspaceRoot, "k6-lint-results.csv");
+  const outCsv = path.join(workspaceRoot, "scripts", "output", "k6-lint-results.csv");
   await fs.writeFile(outCsv, lines.join("\n"), "utf8");
   log("Wrote", outCsv);
 
