@@ -15,18 +15,12 @@ HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
 
 # Configuration
 MISSING = [
-    "Dmitriihub/studyproject2",
-    "Guspex/EBAC-QA",
-    "MateusNeres26/EBAC-QA",
-    "agussyahrilmubarok/course-assignments",
-    "farhanlabib/xk6-file-sample-project",
-    "logsk85-wq/iagentic",
-    "wildananugrah/belajar",
-    "zitadel/zitadel",
+    "mtafasahin/examapp",
+    "chgenberg/functionalfoods"
 ]
 MAX_WORKERS = 2
-CLONE_TIMEOUT = 600  # 10 minutes
-PROCESSED_CSV = os.path.join("scripts", "processed_k6_repos.csv")
+CLONE_TIMEOUT = 600 * 10 # 10 minutes
+PROCESSED_CSV = os.path.join("scripts","output", "processed_k6_repos.csv")
 
 
 def count_lines_in_tree(path):
